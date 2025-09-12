@@ -26,14 +26,29 @@ import {
 } from "recharts";
 
 const Reports = ({ transactions, budgets }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState("6months");
   const [selectedChart, setSelectedChart] = useState("line");
 
-  // Calculate monthly data from actual transactions
+  // Years present in dataset
+  const availableYears = Array.from(
+    new Set((transactions || []).map((t) => new Date(t.date).getFullYear()))
+  ).sort((a, b) => a - b);
+  const defaultYear =
+    availableYears.length > 0
+      ? availableYears[availableYears.length - 1]
+      : new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
+
+  // Filter transactions by selected year
+  const yearFilteredTransactions = (transactions || []).filter((t) => {
+    const y = new Date(t.date).getFullYear();
+    return y === selectedYear;
+  });
+
+  // Calculate monthly data from actual transactions (filtered by year)
   const getMonthlyData = () => {
     const monthlyTotals = {};
 
-    transactions.forEach((transaction) => {
+    yearFilteredTransactions.forEach((transaction) => {
       const date = new Date(transaction.date);
       const monthKey = date.toLocaleDateString("en-US", { month: "short" });
 
@@ -77,18 +92,18 @@ const Reports = ({ transactions, budgets }) => {
 
   const monthlyData = getMonthlyData();
 
-  // Calculate category spending
+  // Calculate category spending (budgets already contain spent, but we keep color/name here)
   const categoryData = budgets.map((budget) => ({
     name: budget.category,
     value: budget.spent,
     color: budget.color,
   }));
 
-  // Calculate weekly data from actual transactions
+  // Calculate weekly data from actual transactions (filtered by year)
   const getWeeklyData = () => {
     const weeklyTotals = {};
 
-    transactions.forEach((transaction) => {
+    yearFilteredTransactions.forEach((transaction) => {
       const date = new Date(transaction.date);
       const weekNumber = Math.ceil(date.getDate() / 7);
       const periodKey = `Week ${weekNumber}`;
@@ -130,20 +145,65 @@ const Reports = ({ transactions, budgets }) => {
     "#84cc16",
   ];
 
-  // Calculate summary statistics
-  const totalIncome = transactions
+  // Calculate summary statistics (filtered by year)
+  const totalIncome = yearFilteredTransactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = transactions
+  const totalExpenses = yearFilteredTransactions
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + t.amount, 0);
   const netSavings = totalIncome - totalExpenses;
   const savingsRate = totalIncome > 0 ? (netSavings / totalIncome) * 100 : 0;
 
+  // Export current report as CSV
+  const exportReport = () => {
+    const lines = [];
+    lines.push(`Year,${selectedYear}`);
+    lines.push("");
+    lines.push("Summary");
+    lines.push("Metric,Amount");
+    lines.push(`Total Income,${totalIncome}`);
+    lines.push(`Total Expenses,${totalExpenses}`);
+    lines.push(`Net Savings,${netSavings}`);
+    lines.push(`Savings Rate (%),${savingsRate.toFixed(2)}`);
+    lines.push("");
+
+    lines.push("Monthly Totals");
+    lines.push("Month,Income,Expenses,Savings");
+    monthlyData.forEach((m) => {
+      lines.push(`${m.month},${m.income},${m.expenses},${m.savings}`);
+    });
+    lines.push("");
+
+    lines.push("Weekly Trend");
+    lines.push("Period,Income,Expenses");
+    trendData.forEach((w) => {
+      lines.push(`${w.period},${w.income},${w.expenses}`);
+    });
+    lines.push("");
+
+    lines.push("Category Spending (from budgets)");
+    lines.push("Category,Spent");
+    categoryData.forEach((c) => {
+      lines.push(`${c.name},${c.value}`);
+    });
+
+    const csvContent = lines.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `financial_report_${selectedYear}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Calculate dynamic insights
   const getTopSpendingCategory = () => {
     const categoryTotals = {};
-    transactions
+    yearFilteredTransactions
       .filter((t) => t.type === "expense" && t.category !== "Payroll")
       .forEach((t) => {
         categoryTotals[t.category] =
@@ -158,7 +218,7 @@ const Reports = ({ transactions, budgets }) => {
 
     const [topCategory, amount] = sortedCategories[0];
     // Calculate percentage excluding payroll from total expenses
-    const nonPayrollExpenses = transactions
+    const nonPayrollExpenses = yearFilteredTransactions
       .filter((t) => t.type === "expense" && t.category !== "Payroll")
       .reduce((sum, t) => sum + t.amount, 0);
     const percentage =
@@ -275,7 +335,6 @@ const Reports = ({ transactions, budgets }) => {
         <div className={`p-3 rounded-lg ${color}`}>
           <Icon size={24} className="text-white" />
         </div>
-        <span className="text-sm text-gray-600">{change}</span>
       </div>
       <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
       <p className="text-gray-600">{title}</p>
@@ -377,7 +436,7 @@ const Reports = ({ transactions, budgets }) => {
             Analyze your financial trends and patterns
           </p>
         </div>
-        <button className="btn btn-primary">
+        <button className="btn btn-primary" onClick={exportReport}>
           <Download size={20} />
           Export Report
         </button>
@@ -416,7 +475,7 @@ const Reports = ({ transactions, budgets }) => {
       </div>
 
       {/* Chart Controls */}
-      <div className="card mb-6">
+      <div className="card mb-6 mt-6 mt-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Financial Trends</h3>
           <div className="flex items-center gap-4">
@@ -424,12 +483,14 @@ const Reports = ({ transactions, budgets }) => {
               <Calendar size={16} className="text-gray-500" />
               <select
                 className="select text-sm"
-                value={selectedPeriod}
-                onChange={(e) => setSelectedPeriod(e.target.value)}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
               >
-                <option value="3months">Last 3 Months</option>
-                <option value="6months">Last 6 Months</option>
-                <option value="1year">Last Year</option>
+                {availableYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -500,149 +561,6 @@ const Reports = ({ transactions, budgets }) => {
               <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Insights */}
-      <div className="card">
-        <h3 className="text-lg font-semibold mb-4">Financial Insights</h3>
-        <div className="grid grid-2 gap-6">
-          <div className="space-y-4">
-            {/* Financial Trend */}
-            <div
-              className={`p-4 border rounded-lg ${
-                financialTrend.type === "positive"
-                  ? "bg-green-50 border-green-200"
-                  : financialTrend.type === "negative"
-                  ? "bg-red-50 border-red-200"
-                  : "bg-blue-50 border-blue-200"
-              }`}
-            >
-              <h4
-                className={`font-semibold mb-2 ${
-                  financialTrend.type === "positive"
-                    ? "text-green-900"
-                    : financialTrend.type === "negative"
-                    ? "text-red-900"
-                    : "text-blue-900"
-                }`}
-              >
-                {financialTrend.type === "positive"
-                  ? "💰"
-                  : financialTrend.type === "negative"
-                  ? "📉"
-                  : "📊"}{" "}
-                Financial Trend
-              </h4>
-              <p
-                className={`text-sm ${
-                  financialTrend.type === "positive"
-                    ? "text-green-800"
-                    : financialTrend.type === "negative"
-                    ? "text-red-800"
-                    : "text-blue-800"
-                }`}
-              >
-                {financialTrend.message}
-              </p>
-            </div>
-
-            {/* Top Spending Category */}
-            {topSpending && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">
-                  📊 Top Spending Category
-                </h4>
-                <p className="text-sm text-blue-800">
-                  {topSpending.category} accounts for{" "}
-                  {topSpending.percentage.toFixed(1)}% of your total spending ($
-                  {topSpending.amount.toLocaleString()}).
-                  {topSpending.percentage > 30
-                    ? " Consider reviewing this category for cost optimization opportunities."
-                    : " This is a reasonable allocation."}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {/* Budget Alerts */}
-            {budgetAlerts.length > 0 ? (
-              budgetAlerts.slice(0, 2).map((alert, index) => (
-                <div
-                  key={index}
-                  className={`p-4 border rounded-lg ${
-                    alert.type === "danger"
-                      ? "bg-red-50 border-red-200"
-                      : "bg-yellow-50 border-yellow-200"
-                  }`}
-                >
-                  <h4
-                    className={`font-semibold mb-2 ${
-                      alert.type === "danger"
-                        ? "text-red-900"
-                        : "text-yellow-900"
-                    }`}
-                  >
-                    {alert.type === "danger" ? "🚨" : "⚠️"} Budget Alert
-                  </h4>
-                  <p
-                    className={`text-sm ${
-                      alert.type === "danger"
-                        ? "text-red-800"
-                        : "text-yellow-800"
-                    }`}
-                  >
-                    {alert.message}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-semibold text-green-900 mb-2">
-                  ✅ Budget Status
-                </h4>
-                <p className="text-sm text-green-800">
-                  All budget categories are within acceptable limits. Great job
-                  managing your finances!
-                </p>
-              </div>
-            )}
-
-            {/* Goal Progress */}
-            <div
-              className={`p-4 border rounded-lg ${
-                goalProgress.type === "good"
-                  ? "bg-green-50 border-green-200"
-                  : goalProgress.type === "warning"
-                  ? "bg-yellow-50 border-yellow-200"
-                  : "bg-red-50 border-red-200"
-              }`}
-            >
-              <h4
-                className={`font-semibold mb-2 ${
-                  goalProgress.type === "good"
-                    ? "text-green-900"
-                    : goalProgress.type === "warning"
-                    ? "text-yellow-900"
-                    : "text-red-900"
-                }`}
-              >
-                🎯 Budget Progress
-              </h4>
-              <p
-                className={`text-sm ${
-                  goalProgress.type === "good"
-                    ? "text-green-800"
-                    : goalProgress.type === "warning"
-                    ? "text-yellow-800"
-                    : "text-red-800"
-                }`}
-              >
-                {goalProgress.message}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

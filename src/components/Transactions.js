@@ -7,7 +7,6 @@ import {
   Trash2,
   TrendingUp,
   TrendingDown,
-  Calendar,
   DollarSign,
 } from "lucide-react";
 
@@ -63,17 +62,7 @@ const Transactions = ({
       const dateA = new Date(a.date);
       const dateB = new Date(b.date);
 
-      if (dateA.getTime() !== dateB.getTime()) {
-        return dateB.getTime() - dateA.getTime();
-      }
-
-      // If dates are the same, sort by time (most recent first)
-      const timeA = a.time.split(":").map(Number);
-      const timeB = b.time.split(":").map(Number);
-      const timeAInMinutes = timeA[0] * 60 + timeA[1];
-      const timeBInMinutes = timeB[0] * 60 + timeB[1];
-
-      return timeBInMinutes - timeAInMinutes;
+      return dateB.getTime() - dateA.getTime();
     });
 
   const handleSubmit = (e) => {
@@ -104,10 +93,6 @@ const Transactions = ({
       month: "short",
       day: "numeric",
     });
-  };
-
-  const formatTime = (timeString) => {
-    return timeString;
   };
 
   return (
@@ -190,7 +175,6 @@ const Transactions = ({
                 <th>Category</th>
                 <th>Amount</th>
                 <th>Date</th>
-                <th>Time</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -233,9 +217,6 @@ const Transactions = ({
                   </td>
                   <td className="text-gray-600">
                     {formatDate(transaction.date)}
-                  </td>
-                  <td className="text-gray-600">
-                    {formatTime(transaction.time)}
                   </td>
                   <td>
                     <div className="flex items-center gap-2">

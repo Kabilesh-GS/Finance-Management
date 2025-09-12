@@ -4,8 +4,6 @@ import {
   TrendingDown,
   DollarSign,
   CreditCard,
-  ArrowUpRight,
-  ArrowDownRight,
 } from "lucide-react";
 import {
   PieChart,
@@ -22,7 +20,6 @@ import {
 } from "recharts";
 
 const Dashboard = ({ transactions, budgets }) => {
-  // Calculate summary statistics
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -33,17 +30,14 @@ const Dashboard = ({ transactions, budgets }) => {
 
   const netIncome = totalIncome - totalExpenses;
 
-  // Get recent transactions
   const recentTransactions = transactions.slice(0, 5);
 
-  // Prepare data for charts
   const expenseByCategory = budgets.map((budget) => ({
     name: budget.category,
     value: budget.spent,
     color: budget.color,
   }));
 
-  // Calculate monthly data from actual transactions
   const getMonthlyData = () => {
     const monthlyTotals = {};
 
@@ -62,7 +56,6 @@ const Dashboard = ({ transactions, budgets }) => {
       }
     });
 
-    // Convert to array format and sort by month
     const monthOrder = [
       "Jan",
       "Feb",
@@ -108,20 +101,6 @@ const Dashboard = ({ transactions, budgets }) => {
         <div className="p-3 rounded-lg bg-blue-50">
           <Icon size={24} className="text-blue-600" />
         </div>
-        {trend && (
-          <div
-            className={`flex items-center gap-1 ${
-              trend === "up" ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            {trend === "up" ? (
-              <ArrowUpRight size={16} />
-            ) : (
-              <ArrowDownRight size={16} />
-            )}
-            <span className="text-sm font-medium">{change}</span>
-          </div>
-        )}
       </div>
       <h3 className="text-2xl font-bold text-gray-900 mb-1">{value}</h3>
       <p className="text-gray-600">{title}</p>
@@ -142,14 +121,12 @@ const Dashboard = ({ transactions, budgets }) => {
         <StatCard
           title="Total Income"
           value={`₹${totalIncome.toLocaleString()}`}
-          change="+12.5%"
           icon={TrendingUp}
           trend="up"
         />
         <StatCard
           title="Total Expenses"
           value={`₹${totalExpenses.toLocaleString()}`}
-          change="+5.2%"
           icon={TrendingDown}
           trend="down"
         />
@@ -169,7 +146,7 @@ const Dashboard = ({ transactions, budgets }) => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-2 mb-8">
+      <div className="grid grid-2 mb-6 mt-4">
         {/* Expense Distribution */}
         <div className="card">
           <h3 className="text-lg font-semibold mb-4">Expense Distribution</h3>

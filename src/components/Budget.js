@@ -13,6 +13,16 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
   const [editingBudget, setEditingBudget] = useState(null);
   const [editAmount, setEditAmount] = useState("");
 
+  // Year selection derived from transactions
+  const availableYears = Array.from(
+    new Set((transactions || []).map((t) => new Date(t.date).getFullYear()))
+  ).sort((a, b) => a - b);
+  const defaultYear =
+    availableYears.length > 0
+      ? availableYears[availableYears.length - 1]
+      : new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(defaultYear);
+
   const handleEditStart = (budget) => {
     setEditingBudget(budget.category);
     setEditAmount(budget.budget.toString());
@@ -45,9 +55,18 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
     return Math.max(budget - spent, 0);
   };
 
-  const totalBudget = budgets.reduce((sum, budget) => sum + budget.budget, 0);
-  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0);
-  const totalRemaining = totalBudget - totalSpent;
+  // Filter transactions by selected year
+  const yearFilteredTransactions = (transactions || []).filter((t) => {
+    const y = new Date(t.date).getFullYear();
+    return y === selectedYear;
+  });
+
+  // Compute spent per category for the selected year
+  const categoryToYearSpent = yearFilteredTransactions.reduce((acc, t) => {
+    if (t.type !== "expense") return acc;
+    acc[t.category] = (acc[t.category] || 0) + t.amount;
+    return acc;
+  }, {});
 
   return (
     <div className="fade-in">
@@ -60,63 +79,42 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
         </p>
       </div>
 
-      {/* Budget Overview */}
-      <div className="grid grid-3 mb-8">
-        <div className="card hover-scale">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-lg bg-blue-50">
-              <Target size={24} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                ₹{totalBudget.toLocaleString()}
-              </h3>
-              <p className="text-gray-600">Total Budget</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card hover-scale">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-lg bg-red-50">
-              <DollarSign size={24} className="text-red-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                ₹{totalSpent.toLocaleString()}
-              </h3>
-              <p className="text-gray-600">Total Spent</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card hover-scale">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-lg bg-green-50">
-              <TrendingUp size={24} className="text-green-600" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                ₹{totalRemaining.toLocaleString()}
-              </h3>
-              <p className="text-gray-600">Remaining</p>
-            </div>
+      {/* Year Selector */}
+      <div className="card mb-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Budget Categories</h3>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Year</span>
+            <select
+              className="select text-sm"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
+            >
+              {availableYears.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
 
       {/* Budget Categories */}
       <div className="card">
-        <h3 className="text-lg font-semibold mb-6">Budget Categories</h3>
+        <h3 className="text-lg font-semibold mb-6">
+          Budget Categories for {selectedYear}
+        </h3>
         <div className="space-y-6">
           {budgets.map((budget) => {
+            const yearSpent = categoryToYearSpent[budget.category] || 0;
             const progressPercentage = getProgressPercentage(
-              budget.spent,
+              yearSpent,
               budget.budget
             );
             const progressColor = getProgressColor(progressPercentage);
-            const remaining = getRemainingAmount(budget.budget, budget.spent);
-            const isOverBudget = budget.spent > budget.budget;
+            const remaining = getRemainingAmount(budget.budget, yearSpent);
+            const isOverBudget = yearSpent > budget.budget;
 
             return (
               <div
@@ -186,7 +184,7 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Spent</p>
                     <p className="text-lg font-semibold text-red-600">
-                      ₹{budget.spent.toLocaleString()}
+                      ₹{yearSpent.toLocaleString()}
                     </p>
                   </div>
                   <div>
@@ -231,49 +229,6 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Budget Tips */}
-      <div className="card mt-6">
-        <h3 className="text-lg font-semibold mb-4">Budget Tips</h3>
-        <div className="grid grid-2 gap-4">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-semibold text-blue-900 mb-2">
-              Track Regularly
-            </h4>
-            <p className="text-sm text-blue-800">
-              Review your spending weekly to stay on track with your budget
-              goals.
-            </p>
-          </div>
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h4 className="font-semibold text-green-900 mb-2">
-              Set Realistic Goals
-            </h4>
-            <p className="text-sm text-green-800">
-              Make sure your budget categories reflect your actual spending
-              patterns.
-            </p>
-          </div>
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h4 className="font-semibold text-yellow-900 mb-2">
-              Emergency Fund
-            </h4>
-            <p className="text-sm text-yellow-800">
-              Consider setting aside 10-20% of your income for unexpected
-              expenses.
-            </p>
-          </div>
-          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-            <h4 className="font-semibold text-purple-900 mb-2">
-              Review & Adjust
-            </h4>
-            <p className="text-sm text-purple-800">
-              Adjust your budget monthly based on your actual spending and
-              income.
-            </p>
-          </div>
         </div>
       </div>
     </div>

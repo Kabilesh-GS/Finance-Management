@@ -5,7 +5,7 @@ import {
   PieChart,
   BarChart3,
   Settings,
-  DollarSign,
+  Brain,
 } from "lucide-react";
 import "./Sidebar.css";
 
@@ -15,13 +15,17 @@ const Sidebar = ({ activeTab, onTabChange }) => {
     { id: "transactions", label: "Transactions", icon: CreditCard },
     { id: "budget", label: "Budget", icon: PieChart },
     { id: "reports", label: "Reports", icon: BarChart3 },
+    { id: "predictions", label: "Predictions", icon: Brain },
+   
   ];
 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <span style={{fontSize: "30px"}} className="logo-icon">💸</span>
+          <span style={{ fontSize: "30px" }} className="logo-icon">
+            💸
+          </span>
           <h1 className="logo-text">FinanceApp</h1>
         </div>
       </div>
@@ -47,12 +51,12 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         </ul>
       </nav>
 
-      <div className="sidebar-footer">
+      {/*<div className="sidebar-footer">
         <button className="nav-link">
           <Settings size={20} />
           <span>Settings</span>
         </button>
-      </div>
+      </div>*/}
     </aside>
   );
 };

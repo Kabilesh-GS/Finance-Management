@@ -1,0 +1,947 @@
+[
+  {
+    "id": 1,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-01-01",
+    "time": "09:00"
+  },
+  {
+    "id": 2,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - January",
+    "date": "2024-01-01",
+    "time": "08:00"
+  },
+  {
+    "id": 3,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3207.0,
+    "description": "Office Utilities - January",
+    "date": "2024-01-03",
+    "time": "18:00"
+  },
+  {
+    "id": 4,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5011.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-01-09",
+    "time": "16:37"
+  },
+  {
+    "id": 5,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 46803.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-01-24",
+    "time": "08:27"
+  },
+  {
+    "id": 6,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 14514.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-01-16",
+    "time": "10:49"
+  },
+  {
+    "id": 7,
+    "type": "income",
+    "category": "Investment",
+    "amount": 31281.0,
+    "description": "Funding / Partnership",
+    "date": "2024-01-12",
+    "time": "08:50"
+  },
+  {
+    "id": 8,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 5091.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-01-12",
+    "time": "16:25"
+  },
+  {
+    "id": 9,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 13724.0,
+    "description": "Marketing Campaign",
+    "date": "2024-01-27",
+    "time": "17:44"
+  },
+  {
+    "id": 10,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-02-01",
+    "time": "09:00"
+  },
+  {
+    "id": 11,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - February",
+    "date": "2024-02-01",
+    "time": "08:00"
+  },
+  {
+    "id": 12,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3437.0,
+    "description": "Office Utilities - February",
+    "date": "2024-02-06",
+    "time": "10:25"
+  },
+  {
+    "id": 13,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5622.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-02-08",
+    "time": "10:03"
+  },
+  {
+    "id": 14,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 13111.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-02-25",
+    "time": "09:37"
+  },
+  {
+    "id": 15,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 59997.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-02-14",
+    "time": "09:21"
+  },
+  {
+    "id": 16,
+    "type": "income",
+    "category": "Investment",
+    "amount": 38552.0,
+    "description": "Funding / Partnership",
+    "date": "2024-02-12",
+    "time": "09:29"
+  },
+  {
+    "id": 17,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 5293.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-02-18",
+    "time": "09:04"
+  },
+  {
+    "id": 18,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 8703.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-02-15",
+    "time": "14:58"
+  },
+  {
+    "id": 19,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-03-01",
+    "time": "09:00"
+  },
+  {
+    "id": 20,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - March",
+    "date": "2024-03-01",
+    "time": "08:00"
+  },
+  {
+    "id": 21,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3243.0,
+    "description": "Office Utilities - March",
+    "date": "2024-03-05",
+    "time": "08:01"
+  },
+  {
+    "id": 22,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5373.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-03-10",
+    "time": "13:41"
+  },
+  {
+    "id": 23,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 12255.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-03-11",
+    "time": "16:57"
+  },
+  {
+    "id": 24,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 56859.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-03-17",
+    "time": "11:14"
+  },
+  {
+    "id": 25,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 12334.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-03-15",
+    "time": "15:50"
+  },
+  {
+    "id": 26,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 7705.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-03-28",
+    "time": "18:48"
+  },
+  {
+    "id": 27,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 4348.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-03-13",
+    "time": "08:05"
+  },
+  {
+    "id": 28,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-04-01",
+    "time": "09:00"
+  },
+  {
+    "id": 29,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - April",
+    "date": "2024-04-01",
+    "time": "08:00"
+  },
+  {
+    "id": 30,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3262.0,
+    "description": "Office Utilities - April",
+    "date": "2024-04-03",
+    "time": "09:39"
+  },
+  {
+    "id": 31,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5602.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-04-09",
+    "time": "17:32"
+  },
+  {
+    "id": 32,
+    "type": "income",
+    "category": "Investment",
+    "amount": 22996.0,
+    "description": "Funding / Partnership",
+    "date": "2024-04-15",
+    "time": "18:08"
+  },
+  {
+    "id": 33,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 11965.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-04-11",
+    "time": "11:31"
+  },
+  {
+    "id": 34,
+    "type": "income",
+    "category": "Investment",
+    "amount": 28251.0,
+    "description": "Funding / Partnership",
+    "date": "2024-04-24",
+    "time": "16:51"
+  },
+  {
+    "id": 35,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 14165.0,
+    "description": "Marketing Campaign",
+    "date": "2024-04-16",
+    "time": "12:36"
+  },
+  {
+    "id": 36,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 8958.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-04-26",
+    "time": "17:41"
+  },
+  {
+    "id": 37,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-05-01",
+    "time": "09:00"
+  },
+  {
+    "id": 38,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - May",
+    "date": "2024-05-01",
+    "time": "08:00"
+  },
+  {
+    "id": 39,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3043.0,
+    "description": "Office Utilities - May",
+    "date": "2024-05-06",
+    "time": "16:01"
+  },
+  {
+    "id": 40,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5735.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-05-08",
+    "time": "17:55"
+  },
+  {
+    "id": 41,
+    "type": "income",
+    "category": "Investment",
+    "amount": 23953.0,
+    "description": "Funding / Partnership",
+    "date": "2024-05-11",
+    "time": "11:54"
+  },
+  {
+    "id": 42,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 43629.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-05-22",
+    "time": "14:06"
+  },
+  {
+    "id": 43,
+    "type": "income",
+    "category": "Investment",
+    "amount": 32923.0,
+    "description": "Funding / Partnership",
+    "date": "2024-05-14",
+    "time": "11:43"
+  },
+  {
+    "id": 44,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 5956.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-05-26",
+    "time": "12:11"
+  },
+  {
+    "id": 45,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 13587.0,
+    "description": "Marketing Campaign",
+    "date": "2024-05-19",
+    "time": "15:56"
+  },
+  {
+    "id": 46,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-06-01",
+    "time": "09:00"
+  },
+  {
+    "id": 47,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - June",
+    "date": "2024-06-01",
+    "time": "08:00"
+  },
+  {
+    "id": 48,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3070.0,
+    "description": "Office Utilities - June",
+    "date": "2024-06-07",
+    "time": "10:03"
+  },
+  {
+    "id": 49,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5889.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-06-05",
+    "time": "12:06"
+  },
+  {
+    "id": 50,
+    "type": "income",
+    "category": "Investment",
+    "amount": 30509.0,
+    "description": "Funding / Partnership",
+    "date": "2024-06-13",
+    "time": "12:45"
+  },
+  {
+    "id": 51,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 40985.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-06-25",
+    "time": "14:15"
+  },
+  {
+    "id": 52,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 40712.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-06-13",
+    "time": "10:53"
+  },
+  {
+    "id": 53,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 11003.0,
+    "description": "Marketing Campaign",
+    "date": "2024-06-17",
+    "time": "18:08"
+  },
+  {
+    "id": 54,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 7529.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-06-16",
+    "time": "13:06"
+  },
+  {
+    "id": 55,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-07-01",
+    "time": "09:00"
+  },
+  {
+    "id": 56,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - July",
+    "date": "2024-07-01",
+    "time": "08:00"
+  },
+  {
+    "id": 57,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3436.0,
+    "description": "Office Utilities - July",
+    "date": "2024-07-06",
+    "time": "11:39"
+  },
+  {
+    "id": 58,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5066.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-07-10",
+    "time": "09:22"
+  },
+  {
+    "id": 59,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 48590.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-07-17",
+    "time": "17:57"
+  },
+  {
+    "id": 60,
+    "type": "income",
+    "category": "Investment",
+    "amount": 24743.0,
+    "description": "Funding / Partnership",
+    "date": "2024-07-23",
+    "time": "13:02"
+  },
+  {
+    "id": 61,
+    "type": "income",
+    "category": "Investment",
+    "amount": 22019.0,
+    "description": "Funding / Partnership",
+    "date": "2024-07-11",
+    "time": "15:16"
+  },
+  {
+    "id": 62,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 13225.0,
+    "description": "Marketing Campaign",
+    "date": "2024-07-19",
+    "time": "15:39"
+  },
+  {
+    "id": 63,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 8823.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-07-27",
+    "time": "15:28"
+  },
+  {
+    "id": 64,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-08-01",
+    "time": "09:00"
+  },
+  {
+    "id": 65,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - August",
+    "date": "2024-08-01",
+    "time": "08:00"
+  },
+  {
+    "id": 66,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3296.0,
+    "description": "Office Utilities - August",
+    "date": "2024-08-05",
+    "time": "14:45"
+  },
+  {
+    "id": 67,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5168.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-08-05",
+    "time": "16:58"
+  },
+  {
+    "id": 68,
+    "type": "income",
+    "category": "Investment",
+    "amount": 33347.0,
+    "description": "Funding / Partnership",
+    "date": "2024-08-19",
+    "time": "11:39"
+  },
+  {
+    "id": 69,
+    "type": "income",
+    "category": "Investment",
+    "amount": 24711.0,
+    "description": "Funding / Partnership",
+    "date": "2024-08-10",
+    "time": "10:17"
+  },
+  {
+    "id": 70,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 5202.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-08-27",
+    "time": "18:36"
+  },
+  {
+    "id": 71,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 12009.0,
+    "description": "Marketing Campaign",
+    "date": "2024-08-26",
+    "time": "08:18"
+  },
+  {
+    "id": 72,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-09-01",
+    "time": "09:00"
+  },
+  {
+    "id": 73,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - September",
+    "date": "2024-09-01",
+    "time": "08:00"
+  },
+  {
+    "id": 74,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3270.0,
+    "description": "Office Utilities - September",
+    "date": "2024-09-04",
+    "time": "11:51"
+  },
+  {
+    "id": 75,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5364.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-09-05",
+    "time": "14:03"
+  },
+  {
+    "id": 76,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 46789.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-09-19",
+    "time": "17:54"
+  },
+  {
+    "id": 77,
+    "type": "income",
+    "category": "Investment",
+    "amount": 25036.0,
+    "description": "Funding / Partnership",
+    "date": "2024-09-14",
+    "time": "18:59"
+  },
+  {
+    "id": 78,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 14703.0,
+    "description": "Marketing Campaign",
+    "date": "2024-09-20",
+    "time": "16:20"
+  },
+  {
+    "id": 79,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 7430.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-09-25",
+    "time": "11:41"
+  },
+  {
+    "id": 80,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-10-01",
+    "time": "09:00"
+  },
+  {
+    "id": 81,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - October",
+    "date": "2024-10-01",
+    "time": "08:00"
+  },
+  {
+    "id": 82,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3388.0,
+    "description": "Office Utilities - October",
+    "date": "2024-10-05",
+    "time": "17:49"
+  },
+  {
+    "id": 83,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5559.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-10-10",
+    "time": "14:04"
+  },
+  {
+    "id": 84,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 59957.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-10-13",
+    "time": "08:09"
+  },
+  {
+    "id": 85,
+    "type": "income",
+    "category": "Investment",
+    "amount": 24015.0,
+    "description": "Funding / Partnership",
+    "date": "2024-10-11",
+    "time": "17:24"
+  },
+  {
+    "id": 86,
+    "type": "income",
+    "category": "Investment",
+    "amount": 29538.0,
+    "description": "Funding / Partnership",
+    "date": "2024-10-18",
+    "time": "16:52"
+  },
+  {
+    "id": 87,
+    "type": "expense",
+    "category": "Travel",
+    "amount": 5063.0,
+    "description": "Business Travel - Client Meetings",
+    "date": "2024-10-28",
+    "time": "12:21"
+  },
+  {
+    "id": 88,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 8831.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-10-15",
+    "time": "13:34"
+  },
+  {
+    "id": 89,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-11-01",
+    "time": "09:00"
+  },
+  {
+    "id": 90,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - November",
+    "date": "2024-11-01",
+    "time": "08:00"
+  },
+  {
+    "id": 91,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3177.0,
+    "description": "Office Utilities - November",
+    "date": "2024-11-07",
+    "time": "09:20"
+  },
+  {
+    "id": 92,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5808.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-11-10",
+    "time": "16:58"
+  },
+  {
+    "id": 93,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 18439.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-11-21",
+    "time": "11:34"
+  },
+  {
+    "id": 94,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 15850.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-11-21",
+    "time": "12:54"
+  },
+  {
+    "id": 95,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 51164.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-11-24",
+    "time": "08:53"
+  },
+  {
+    "id": 96,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 8416.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-11-15",
+    "time": "12:10"
+  },
+  {
+    "id": 97,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 14450.0,
+    "description": "Marketing Campaign",
+    "date": "2024-11-23",
+    "time": "08:05"
+  },
+  {
+    "id": 98,
+    "type": "expense",
+    "category": "Payroll",
+    "amount": 28000.0,
+    "description": "Monthly Employee Salaries",
+    "date": "2024-12-01",
+    "time": "09:00"
+  },
+  {
+    "id": 99,
+    "type": "expense",
+    "category": "Office Rent",
+    "amount": 8500.0,
+    "description": "Downtown Office Space - December",
+    "date": "2024-12-01",
+    "time": "08:00"
+  },
+  {
+    "id": 100,
+    "type": "expense",
+    "category": "Utilities",
+    "amount": 3290.0,
+    "description": "Office Utilities - December",
+    "date": "2024-12-07",
+    "time": "08:28"
+  },
+  {
+    "id": 101,
+    "type": "expense",
+    "category": "Technology",
+    "amount": 5550.0,
+    "description": "Software Licenses & Cloud Services",
+    "date": "2024-12-05",
+    "time": "14:55"
+  },
+  {
+    "id": 102,
+    "type": "income",
+    "category": "Sales Revenue",
+    "amount": 45552.0,
+    "description": "Product Sales - TechCorp Solutions",
+    "date": "2024-12-12",
+    "time": "16:42"
+  },
+  {
+    "id": 103,
+    "type": "income",
+    "category": "Consulting",
+    "amount": 19449.0,
+    "description": "Enterprise Consulting Services",
+    "date": "2024-12-11",
+    "time": "17:45"
+  },
+  {
+    "id": 104,
+    "type": "expense",
+    "category": "Marketing",
+    "amount": 13614.0,
+    "description": "Marketing Campaign",
+    "date": "2024-12-16",
+    "time": "18:32"
+  },
+  {
+    "id": 105,
+    "type": "expense",
+    "category": "Professional Services",
+    "amount": 7094.0,
+    "description": "Legal & Accounting Services",
+    "date": "2024-12-27",
+    "time": "10:42"
+  }
+]
