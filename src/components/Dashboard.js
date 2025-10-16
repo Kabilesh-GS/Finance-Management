@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  CreditCard,
-} from "lucide-react";
+import { TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -120,19 +115,19 @@ const Dashboard = ({ transactions, budgets }) => {
       <div className="grid grid-4 mb-8">
         <StatCard
           title="Total Income"
-          value={`₹${totalIncome.toLocaleString()}`}
+          value={`₹${totalIncome.toFixed(2)}`}
           icon={TrendingUp}
           trend="up"
         />
         <StatCard
           title="Total Expenses"
-          value={`₹${totalExpenses.toLocaleString()}`}
+          value={`₹${totalExpenses.toFixed(2)}`}
           icon={TrendingDown}
           trend="down"
         />
         <StatCard
           title="Net Income"
-          value={`₹${netIncome.toLocaleString()}`}
+          value={`₹${netIncome.toFixed(2)}`}
           change={netIncome >= 0 ? "+8.3%" : "-2.1%"}
           icon={DollarSign}
           trend={netIncome >= 0 ? "up" : "down"}
@@ -168,7 +163,9 @@ const Dashboard = ({ transactions, budgets }) => {
                   />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`₹ ${value}`, "Amount"]} />
+              <Tooltip
+                formatter={(value) => [`₹ ${value.toFixed(2)}`, "Amount"]}
+              />
               <Legend
                 payload={expenseByCategory.map((entry, index) => ({
                   value: entry.name,
@@ -190,7 +187,7 @@ const Dashboard = ({ transactions, budgets }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹ ${value}`, ""]} />
+              <Tooltip formatter={(value) => [`₹ ${value.toFixed(2)}`, ""]} />
               <Bar dataKey="income" fill="#10b981" name="Income" />
               <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
             </BarChart>

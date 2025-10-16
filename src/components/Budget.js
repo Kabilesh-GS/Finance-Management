@@ -178,13 +178,13 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Budget</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      ₹{budget.budget.toLocaleString()}
+                      ₹{budget.budget.toFixed(2)}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Spent</p>
                     <p className="text-lg font-semibold text-red-600">
-                      ₹{yearSpent.toLocaleString()}
+                      ₹{yearSpent.toFixed(2)}
                     </p>
                   </div>
                   <div>
@@ -194,7 +194,7 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
                         remaining > 0 ? "text-green-600" : "text-red-600"
                       }`}
                     >
-                      ₹{remaining.toLocaleString()}
+                      ₹{remaining.toFixed(2)}
                     </p>
                   </div>
                 </div>

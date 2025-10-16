@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -19,6 +19,7 @@ const Transactions = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [displayCount, setDisplayCount] = useState(15);
   const [newTransaction, setNewTransaction] = useState({
     type: "expense",
     category: "",
@@ -65,6 +66,22 @@ const Transactions = ({
       return dateB.getTime() - dateA.getTime();
     });
 
+  const displayedTransactions = filteredTransactions.slice(0, displayCount);
+  const hasMoreTransactions = filteredTransactions.length > displayCount;
+
+  const handleShowMore = () => {
+    setDisplayCount((prev) => prev + 15);
+  };
+
+  const handleResetDisplayCount = () => {
+    setDisplayCount(15);
+  };
+
+  // Reset display count when filters change
+  useEffect(() => {
+    setDisplayCount(15);
+  }, [searchTerm, filterType, filterCategory]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (
@@ -102,7 +119,15 @@ const Transactions = ({
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Transactions
           </h1>
-          <p className="text-gray-600">Manage your income and expenses</p>
+          <p className="text-gray-600">
+            Manage your income and expenses
+            {filteredTransactions.length > 0 && (
+              <span className="ml-2 text-sm text-gray-500">
+                ({displayedTransactions.length} of {filteredTransactions.length}{" "}
+                shown)
+              </span>
+            )}
+          </p>
         </div>
         <button
           className="btn btn-primary"
@@ -179,7 +204,7 @@ const Transactions = ({
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((transaction) => (
+              {displayedTransactions.map((transaction) => (
                 <tr key={transaction.id}>
                   <td>
                     <div
@@ -236,7 +261,7 @@ const Transactions = ({
             </tbody>
           </table>
 
-          {filteredTransactions.length === 0 && (
+          {displayedTransactions.length === 0 && (
             <div className="text-center py-8">
               <DollarSign size={48} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -251,6 +276,28 @@ const Transactions = ({
               >
                 <Plus size={20} />
                 Add Your First Transaction
+              </button>
+            </div>
+          )}
+
+          {/* Show More Button */}
+          {hasMoreTransactions && displayedTransactions.length > 0 && (
+            <div className="text-center py-4 border-t">
+              <button className="btn btn-secondary" onClick={handleShowMore}>
+                Show More ({filteredTransactions.length - displayCount}{" "}
+                remaining)
+              </button>
+            </div>
+          )}
+
+          {/* Show Less Button - only show if we're showing more than 15 */}
+          {displayCount > 15 && (
+            <div className="text-center py-2">
+              <button
+                className="btn btn-outline text-sm"
+                onClick={handleResetDisplayCount}
+              >
+                Show Less
               </button>
             </div>
           )}

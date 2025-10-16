@@ -13,13 +13,21 @@ const expenseCategories = [
 ];
 
 function normalizeDateToISO(dateStr) {
-  // Input like M/D/YYYY → output YYYY-MM-DD
-  const [m, d, y] = dateStr.split("/").map((v) => parseInt(v, 10));
-  const dt = new Date(y, m - 1, d);
-  const yyyy = dt.getFullYear();
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const dd = String(dt.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  // Handle both formats: M/D/YYYY and YYYY-MM-DD
+  if (dateStr.includes("/")) {
+    // Input like M/D/YYYY → output YYYY-MM-DD
+    const [m, d, y] = dateStr.split("/").map((v) => parseInt(v, 10));
+    const dt = new Date(y, m - 1, d);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd = String(dt.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  } else if (dateStr.includes("-")) {
+    // Input already in YYYY-MM-DD format
+    return dateStr;
+  }
+  // Fallback - try to parse as is
+  return dateStr;
 }
 
 function mapExpenseCategory(csvKey) {

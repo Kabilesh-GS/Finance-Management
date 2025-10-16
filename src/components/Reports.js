@@ -350,7 +350,7 @@ const Reports = ({ transactions, budgets }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹${value}`, ""]} />
+              <Tooltip formatter={(value) => [`₹${value.toFixed(2)}`, ""]} />
               <Legend />
               <Line
                 type="monotone"
@@ -383,7 +383,7 @@ const Reports = ({ transactions, budgets }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹${value}`, ""]} />
+              <Tooltip formatter={(value) => [`₹${value.toFixed(2)}`, ""]} />
               <Legend />
               <Area
                 type="monotone"
@@ -413,7 +413,7 @@ const Reports = ({ transactions, budgets }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹${value}`, ""]} />
+              <Tooltip formatter={(value) => [`₹${value.toFixed(2)}`, ""]} />
               <Legend />
               <Bar dataKey="income" fill="#10b981" name="Income" />
               <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
@@ -446,21 +446,21 @@ const Reports = ({ transactions, budgets }) => {
       <div className="grid grid-4 mb-8">
         <StatCard
           title="Total Income"
-          value={`₹${totalIncome.toLocaleString()}`}
+          value={`₹${totalIncome.toFixed(2)}`}
           change="+12.5%"
           icon={TrendingUp}
           color="bg-green-500"
         />
         <StatCard
           title="Total Expenses"
-          value={`₹${totalExpenses.toLocaleString()}`}
+          value={`₹${totalExpenses.toFixed(2)}`}
           change="+5.2%"
           icon={BarChart3}
           color="bg-red-500"
         />
         <StatCard
           title="Net Savings"
-          value={`₹${netSavings.toLocaleString()}`}
+          value={`₹${netSavings.toFixed(2)}`}
           change={netSavings >= 0 ? "+8.3%" : "-2.1%"}
           icon={PieChart}
           color={netSavings >= 0 ? "bg-blue-500" : "bg-red-500"}
@@ -533,7 +533,9 @@ const Reports = ({ transactions, budgets }) => {
                   />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`₹${value}`, "Amount"]} />
+              <Tooltip
+                formatter={(value) => [`₹${value.toFixed(2)}`, "Amount"]}
+              />
               <Legend
                 payload={categoryData.map((entry, index) => ({
                   value: entry.name,
@@ -555,7 +557,7 @@ const Reports = ({ transactions, budgets }) => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="period" />
               <YAxis />
-              <Tooltip formatter={(value) => [`₹${value}`, ""]} />
+              <Tooltip formatter={(value) => [`₹${value.toFixed(2)}`, ""]} />
               <Legend />
               <Bar dataKey="income" fill="#10b981" name="Income" />
               <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />

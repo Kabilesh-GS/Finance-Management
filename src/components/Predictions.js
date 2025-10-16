@@ -3,275 +3,319 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  AlertTriangle,
-  CheckCircle,
+  AlertCircle,
   Info,
+  Target,
 } from "lucide-react";
-// Predictions are now sourced from backend API
+import "./Predictions.css";
 
-const Predictions = ({ transactions, budgets }) => {
+const Predictions = () => {
   const [predictions, setPredictions] = useState(null);
+  const [yearlyPredictions, setYearlyPredictions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeView, setActiveView] = useState("monthly");
 
   useEffect(() => {
-    const loadPredictions = async () => {
-      try {
-        const res = await fetch("http://127.0.0.1:8000/predict");
-        if (!res.ok) {
-          throw new Error(`API error ${res.status}`);
-        }
-        const data = await res.json();
-
-        const income =
-          (data.predictions && data.predictions.income) ?? data.income ?? 0;
-        const expenses =
-          (data.predictions && data.predictions.expenses) ?? data.expenses ?? 0;
-        const savings =
-          (data.predictions && data.predictions.savings) ??
-          data.savings ??
-          income - expenses;
-        const confidence =
-          (data.predictions && data.predictions.confidence) ??
-          data.confidence ??
-          0.7;
-        const month = data.month || data.next_month || "Next Month";
-        const insights = data.insights || [];
-
-        setPredictions({
-          month,
-          predictions: { income, expenses, savings },
-          confidence,
-          insights,
-        });
-      } catch (err) {
-        console.error("Failed to fetch predictions:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPredictions();
+    fetchPredictions();
   }, []);
 
-  console.log(predictions);
+  const fetchPredictions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  if (loading) {
-    return (
-      <div className="fade-in">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Financial Predictions
-          </h1>
-          <p className="text-gray-600">
-            Analyzing historical data to predict next month's finances
-          </p>
-        </div>
-        <div className="flex justify-center items-center py-12">
-          <div className="spinner"></div>
-        </div>
+      // Fetch monthly predictions
+      const monthlyResponse = await fetch("http://localhost:8000/predict");
+      if (!monthlyResponse.ok) {
+        throw new Error("Failed to fetch monthly predictions");
+      }
+      const monthlyData = await monthlyResponse.json();
+
+      // Fetch yearly predictions
+      const yearlyResponse = await fetch("http://localhost:8000/predict/year");
+      if (!yearlyResponse.ok) {
+        throw new Error("Failed to fetch yearly predictions");
+      }
+      const yearlyData = await yearlyResponse.json();
+
+      setPredictions(monthlyData);
+      setYearlyPredictions(yearlyData);
+    } catch (err) {
+      console.error("Error fetching predictions:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+
+  const getConfidenceColor = (confidence) => {
+    if (confidence >= 0.8) return "#10b981"; // green
+    if (confidence >= 0.6) return "#f59e0b"; // yellow
+    return "#ef4444"; // red
+  };
+
+  const getConfidenceLabel = (confidence) => {
+    if (confidence >= 0.8) return "High";
+    if (confidence >= 0.6) return "Medium";
+    return "Low";
+  };
+
+  const renderInsightIcon = (type) => {
+    switch (type) {
+      case "warning":
+        return <AlertCircle className="insight-icon warning" size={16} />;
+      case "info":
+        return <Info className="insight-icon info" size={16} />;
+      default:
+        return <Info className="insight-icon info" size={16} />;
+    }
+  };
+
+  const renderPredictionCard = (title, value, icon, trend = null) => (
+    <div className="prediction-card">
+      <div className="prediction-header">
+        <div className="prediction-icon">{icon}</div>
+        <h3 className="prediction-title">{title}</h3>
       </div>
-    );
-  }
-
-  if (!predictions) {
-    return (
-      <div className="fade-in">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Financial Predictions
-          </h1>
-          <p className="text-gray-600">Insufficient data for predictions</p>
-        </div>
-        <div className="text-center py-8">
-          <Info size={48} className="mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Predictions Available
-          </h3>
-          <p className="text-gray-600">
-            Add more transaction data to enable predictions
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const { month, predictions: pred, confidence, insights } = predictions;
-
-  const StatCard = ({ title, value, icon: Icon, color, trend }) => (
-    <div className="card hover-scale">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${color}`}>
-          <Icon size={24} className="text-white" />
-        </div>
-        <div className="text-right">
-          <div className="text-sm text-gray-600">Confidence</div>
-          <div className="text-sm font-medium">
-            {Math.round(confidence * 100)}%
-          </div>
-        </div>
-      </div>
-      <h3 className="text-2xl font-bold text-gray-900 mb-1">
-        ₹{value.toLocaleString()}
-      </h3>
-      <p className="text-gray-600">{title}</p>
+      <div className="prediction-value">{formatCurrency(value)}</div>
       {trend && (
         <div
-          className={`flex items-center gap-1 mt-2 text-sm ${
-            trend > 0 ? "text-green-600" : "text-red-600"
-          }`}
+          className={`prediction-trend ${trend > 0 ? "positive" : "negative"}`}
         >
           {trend > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-          <span>{Math.abs(trend).toFixed(1)}% vs avg</span>
+          <span>{Math.abs(trend).toFixed(1)}%</span>
         </div>
       )}
     </div>
   );
 
-  const InsightCard = ({ insight, index }) => (
-    <div
-      key={index}
-      className={`p-4 border rounded-lg ${
-        insight.type === "positive"
-          ? "bg-green-50 border-green-200"
-          : insight.type === "warning"
-          ? "bg-yellow-50 border-yellow-200"
-          : "bg-red-50 border-red-200"
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        {insight.type === "positive" ? (
-          <CheckCircle size={20} className="text-green-600 mt-0.5" />
-        ) : insight.type === "warning" ? (
-          <AlertTriangle size={20} className="text-yellow-600 mt-0.5" />
-        ) : (
-          <AlertTriangle size={20} className="text-red-600 mt-0.5" />
-        )}
-        <p
-          className={`text-sm ${
-            insight.type === "positive"
-              ? "text-green-800"
-              : insight.type === "warning"
-              ? "text-yellow-800"
-              : "text-red-800"
-          }`}
-        >
-          {insight.message}
-        </p>
-      </div>
-    </div>
-  );
+  const renderMonthlyPredictions = () => {
+    if (!predictions) return null;
 
-  return (
-    <div className="fade-in">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Financial Predictions
-        </h1>
-        <p className="text-gray-600">AI-powered predictions for {month}</p>
-      </div>
+    const { monthly_predictions, summary, insights } = predictions;
 
-      {/* Prediction Cards */}
-      <div className="grid grid-3 mb-8">
-        <StatCard
-          title="Predicted Income"
-          value={pred.income}
-          icon={TrendingUp}
-          color="bg-green-500"
-          trend={pred.income > 0 ? 5.2 : 0}
-        />
-        <StatCard
-          title="Predicted Expenses"
-          value={pred.expenses}
-          icon={TrendingDown}
-          color="bg-red-500"
-          trend={pred.expenses > 0 ? -2.1 : 0}
-        />
-        <StatCard
-          title="Predicted Savings"
-          value={pred.savings}
-          icon={DollarSign}
-          color={pred.savings >= 0 ? "bg-blue-500" : "bg-red-500"}
-          trend={pred.savings > 0 ? 8.3 : -5.1}
-        />
-      </div>
-
-      {/* Prediction Details */}
-      <div className="grid grid-2 gap-6 mt-4">
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Prediction Summary</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Expected Income</span>
-              <span className="font-semibold text-green-600">
-                ₹{pred.income.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Expected Expenses</span>
-              <span className="font-semibold text-red-600">
-                ₹{pred.expenses.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Expected Savings</span>
-              <span
-                className={`font-semibold ${
-                  pred.savings >= 0 ? "text-blue-600" : "text-red-600"
-                }`}
-              >
-                ₹{pred.savings.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Savings Rate</span>
-              <span className="font-semibold text-gray-900">
-                {pred.income > 0
-                  ? ((pred.savings / pred.income) * 100).toFixed(1)
-                  : 0}
-                %
-              </span>
-            </div>
+    return (
+      <div className="predictions-content">
+        <div className="predictions-header">
+          <h2>Monthly Predictions</h2>
+          <div className="prediction-month">
+            <Target size={20} />
+            <span>Next 12 Months</span>
           </div>
         </div>
 
-        <div className="card">
-          <h3 className="text-lg font-semibold mb-4">Model Information</h3>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Prediction Confidence</span>
-              <span className="font-semibold">
-                {Math.round(confidence * 100)}%
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Data Points Used</span>
-              <span className="font-semibold">
-                {transactions.length} transactions
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Time Period</span>
-              <span className="font-semibold">2 years historical</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Algorithm</span>
-              <span className="font-semibold">Regression Model</span>
-            </div>
+        <div className="predictions-grid">
+          {renderPredictionCard(
+            "Average Monthly Income",
+            summary.avg_monthly_income,
+            <DollarSign size={24} />
+          )}
+          {renderPredictionCard(
+            "Average Monthly Expenses",
+            summary.avg_monthly_expenses,
+            <TrendingDown size={24} />
+          )}
+          {renderPredictionCard(
+            "Average Monthly Savings",
+            summary.avg_monthly_savings,
+            <TrendingUp size={24} />
+          )}
+        </div>
+
+        <div className="confidence-section">
+          <h3>Prediction Confidence</h3>
+          <div className="confidence-display">
+            <div
+              className="confidence-bar"
+              style={{
+                width: `${summary.confidence * 100}%`,
+                backgroundColor: getConfidenceColor(summary.confidence),
+              }}
+            />
+            <span className="confidence-text">
+              {getConfidenceLabel(summary.confidence)} (
+              {Math.round(summary.confidence * 100)}%)
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* Insights */}
-      {insights.length > 0 && (
-        <div className="card mt-4">
-          <h3 className="text-lg font-semibold mb-4">Prediction Insights</h3>
-          <div className="space-y-3">
-            {insights.map((insight, index) => (
-              <InsightCard key={index} insight={insight} index={index} />
+        <div className="monthly-breakdown">
+          <h3>Monthly Breakdown</h3>
+          <div className="monthly-table">
+            <div className="table-header">
+              <span data-label="Month">Month</span>
+              <span data-label="Income">Income</span>
+              <span data-label="Expenses">Expenses</span>
+              <span data-label="Savings">Savings</span>
+            </div>
+            {monthly_predictions.map((month, index) => (
+              <div key={index} className="table-row">
+                <span className="month-name" data-label="Month">
+                  {month.month}
+                </span>
+                <span className="income-value" data-label="Income">
+                  {formatCurrency(month.income)}
+                </span>
+                <span className="expense-value" data-label="Expenses">
+                  {formatCurrency(month.expenses)}
+                </span>
+                <span
+                  className={`savings-value ${
+                    month.savings >= 0 ? "positive" : "negative"
+                  }`}
+                  data-label="Savings"
+                >
+                  {formatCurrency(month.savings)}
+                </span>
+              </div>
             ))}
           </div>
         </div>
-      )}
+
+        {insights && insights.length > 0 && (
+          <div className="insights-section">
+            <h3>Key Insights</h3>
+            <div className="insights-list">
+              {insights.map((insight, index) => (
+                <div key={index} className={`insight-item ${insight.type}`}>
+                  {renderInsightIcon(insight.type)}
+                  <span>{insight.message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderYearlyPredictions = () => {
+    if (!yearlyPredictions) return null;
+
+    const { predictions: predData } = yearlyPredictions;
+
+    return (
+      <div className="predictions-content">
+        <div className="predictions-header">
+          <h2>Yearly Predictions</h2>
+          <div className="prediction-period">
+            <Target size={20} />
+            <span>Next 12 Months</span>
+          </div>
+        </div>
+
+        <div className="predictions-grid">
+          {renderPredictionCard(
+            "Annual Income",
+            predData.income,
+            <DollarSign size={24} />
+          )}
+          {renderPredictionCard(
+            "Annual Expenses",
+            predData.expenses,
+            <TrendingDown size={24} />
+          )}
+          {renderPredictionCard(
+            "Annual Savings",
+            predData.savings,
+            <TrendingUp size={24} />
+          )}
+        </div>
+
+        <div className="confidence-section">
+          <h3>Prediction Confidence</h3>
+          <div className="confidence-display">
+            <div
+              className="confidence-bar"
+              style={{
+                width: `${predData.confidence * 100}%`,
+                backgroundColor: getConfidenceColor(predData.confidence),
+              }}
+            />
+            <span className="confidence-text">
+              {getConfidenceLabel(predData.confidence)} (
+              {Math.round(predData.confidence * 100)}%)
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="predictions-container">
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading predictions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="predictions-container">
+        <div className="error-state">
+          <AlertCircle size={48} />
+          <h3>Error Loading Predictions</h3>
+          <p>{error}</p>
+          <button onClick={fetchPredictions} className="retry-button">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="predictions-container">
+      <div className="predictions-header-main">
+        <h1>Financial Predictions</h1>
+        <div className="view-toggle">
+          <button
+            className={`toggle-button ${
+              activeView === "monthly" ? "active" : ""
+            }`}
+            onClick={() => setActiveView("monthly")}
+          >
+            Monthly
+          </button>
+          <button
+            className={`toggle-button ${
+              activeView === "yearly" ? "active" : ""
+            }`}
+            onClick={() => setActiveView("yearly")}
+          >
+            Yearly
+          </button>
+        </div>
+      </div>
+
+      {activeView === "monthly"
+        ? renderMonthlyPredictions()
+        : renderYearlyPredictions()}
+
+      <div className="predictions-footer">
+        <div className="disclaimer">
+          <Info size={16} />
+          <span>
+            Predictions are based on historical data and linear regression
+            models. Actual results may vary based on market conditions and
+            business changes.
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

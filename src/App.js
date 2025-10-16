@@ -7,7 +7,7 @@ import Reports from "./components/Reports";
 import Predictions from "./components/Predictions";
 import "./App.css";
 
-import budgetsData from "../src/Dataset/budgets_2024.json";
+import budgetsData from "./models/Dataset/budgets_2024.json";
 import { parseCsvTextToTransactions } from "./utils/csvToTransactions";
 
 function App() {
@@ -30,7 +30,7 @@ function App() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("/company_finances_daily_2024_2025.csv");
+        const res = await fetch("http://localhost:8000/data/csv");
         if (!res.ok) {
           console.error("CSV fetch failed:", res.status, res.statusText);
           return;
@@ -101,7 +101,7 @@ function App() {
       case "reports":
         return <Reports transactions={transactions} budgets={budgets} />;
       case "predictions":
-        return <Predictions transactions={transactions} budgets={budgets} />;
+        return <Predictions />;
       default:
         return <Dashboard transactions={transactions} budgets={budgets} />;
     }

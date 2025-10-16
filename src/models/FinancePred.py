@@ -9,7 +9,11 @@ class FinancialPredictor:
         self.model_expenses = LinearRegression()
 
     def preprocess(self, csv_path):
-        # Load CSV
+        # Load CSV - handle both relative and absolute paths
+        import os
+        if not os.path.isabs(csv_path):
+            # If relative path, look relative to current file location
+            csv_path = os.path.join(os.path.dirname(__file__), csv_path)
         df = pd.read_csv(csv_path, parse_dates=["date"])
         
         # Extract month as YYYY-MM
@@ -32,8 +36,7 @@ class FinancialPredictor:
 
         # Totals
         monthly["income_total"] = monthly[["sales", "consulting", "investment"]].sum(axis=1)
-        monthly["expenses_total"] = monthly[["payroll", "rent", "utilities", "technology", 
-                                             "marketing", "travel", "professional_services", "misc"]].sum(axis=1)
+        monthly["expenses_total"] = monthly[["payroll", "rent", "utilities", "technology", "marketing", "travel", "professional_services", "misc"]].sum(axis=1)
         monthly["savings"] = monthly["income_total"] - monthly["expenses_total"]
         monthly["time_idx"] = np.arange(len(monthly))
 
@@ -59,42 +62,124 @@ class FinancialPredictor:
         df = self.preprocess(csv_path)
 
         last_month = pd.to_datetime(df['month'].iloc[-1])
-        next_month = (last_month + pd.DateOffset(months=1)).strftime("%Y-%m")
-
+        
         X = df[['time_idx']]
         self.model_income.fit(X, df['income_total'])
         self.model_expenses.fit(X, df['expenses_total'])
 
-        next_idx = np.array([[df['time_idx'].iloc[-1] + 1]])
-        income_pred = int(self.model_income.predict(next_idx)[0])
-        expenses_pred = int(self.model_expenses.predict(next_idx)[0])
-        savings_pred = income_pred - expenses_pred
+        # Predict next 12 months
+        monthly_predictions = []
+        total_income = 0
+        total_expenses = 0
+        
+        for i in range(1, 13):  # Next 12 months
+            next_idx = np.array([[df['time_idx'].iloc[-1] + i]])
+            income_pred = int(self.model_income.predict(next_idx)[0])
+            expenses_pred = int(self.model_expenses.predict(next_idx)[0])
+            savings_pred = income_pred - expenses_pred
+            
+            # Calculate the month name
+            month_date = last_month + pd.DateOffset(months=i)
+            month_name = month_date.strftime("%Y-%m")
+            
+            monthly_predictions.append({
+                "month": month_name,
+                "income": income_pred,
+                "expenses": expenses_pred,
+                "savings": savings_pred
+            })
+            
+            total_income += income_pred
+            total_expenses += expenses_pred
 
+        total_savings = total_income - total_expenses
         confidence = self.calculate_confidence(df, "expenses_total")
 
         insights = []
-        savings_rate = savings_pred / income_pred if income_pred > 0 else 0
+        avg_savings_rate = total_savings / total_income if total_income > 0 else 0
         insights.append({
             "type": "info",
-            "message": f"Predicted savings rate: {savings_rate:.1%}"
+            "message": f"Average predicted savings rate over 12 months: {avg_savings_rate:.1%}"
         })
-        if expenses_pred > df['expenses_total'].mean() * 1.2:
+        
+        avg_monthly_expenses = total_expenses / 12
+        avg_monthly_income = total_income / 12
+        
+        if avg_monthly_expenses > df['expenses_total'].mean() * 1.2:
             insights.append({
                 "type": "warning",
-                "message": "Expenses are projected above the recent average"
+                "message": "Average monthly expenses are projected above the recent average"
             })
-        if income_pred < df['income_total'].mean() * 0.8:
+        if avg_monthly_income < df['income_total'].mean() * 0.8:
             insights.append({
                 "type": "warning",
-                "message": "Income is projected below the recent average"
+                "message": "Average monthly income is projected below the recent average"
             })
 
         return {
-            "month": next_month,
+            "monthly_predictions": monthly_predictions,
+            "summary": {
+                "total_income": total_income,
+                "total_expenses": total_expenses,
+                "total_savings": total_savings,
+                "avg_monthly_income": int(total_income / 12),
+                "avg_monthly_expenses": int(total_expenses / 12),
+                "avg_monthly_savings": int(total_savings / 12),
+                "confidence": confidence
+            },
+            "insights": insights
+        }
+
+    def predict_next_year(self, csv_path):
+        df = self.preprocess(csv_path)
+
+        # Calculate yearly predictions by predicting next 12 months
+        X = df[['time_idx']]
+        self.model_income.fit(X, df['income_total'])
+        self.model_expenses.fit(X, df['expenses_total'])
+
+        # Predict next 12 months and sum them up
+        yearly_income = 0
+        yearly_expenses = 0
+        
+        for i in range(1, 13):  # Next 12 months
+            next_idx = np.array([[df['time_idx'].iloc[-1] + i]])
+            monthly_income = self.model_income.predict(next_idx)[0]
+            monthly_expenses = self.model_expenses.predict(next_idx)[0]
+            
+            yearly_income += monthly_income
+            yearly_expenses += monthly_expenses
+
+        yearly_savings = yearly_income - yearly_expenses
+        confidence = self.calculate_confidence(df, "expenses_total")
+
+        insights = []
+        savings_rate = yearly_savings / yearly_income if yearly_income > 0 else 0
+        insights.append({
+            "type": "info",
+            "message": f"Predicted annual savings rate: {savings_rate:.1%}"
+        })
+        
+        # Compare with historical averages
+        avg_monthly_income = df['income_total'].mean()
+        avg_monthly_expenses = df['expenses_total'].mean()
+        
+        if yearly_expenses / 12 > avg_monthly_expenses * 1.2:
+            insights.append({
+                "type": "warning",
+                "message": "Annual expenses are projected significantly above historical average"
+            })
+        if yearly_income / 12 < avg_monthly_income * 0.8:
+            insights.append({
+                "type": "warning",
+                "message": "Annual income is projected below historical average"
+            })
+
+        return {
             "predictions": {
-                "income": income_pred,
-                "expenses": expenses_pred,
-                "savings": savings_pred,
+                "income": int(yearly_income),
+                "expenses": int(yearly_expenses),
+                "savings": int(yearly_savings),
                 "confidence": confidence
             },
             "insights": insights
