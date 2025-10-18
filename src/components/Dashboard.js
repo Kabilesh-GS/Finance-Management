@@ -1,5 +1,13 @@
 import React from "react";
-import { TrendingUp, TrendingDown, DollarSign, CreditCard } from "lucide-react";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  CreditCard,
+  Building2,
+  User,
+} from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 import {
   PieChart,
   Pie,
@@ -15,6 +23,7 @@ import {
 } from "recharts";
 
 const Dashboard = ({ transactions, budgets }) => {
+  const { user, getOrganizationName } = useAuth();
   const totalIncome = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + t.amount, 0);
@@ -76,6 +85,7 @@ const Dashboard = ({ transactions, budgets }) => {
         (a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month)
       );
   };
+    console.log("ENV:", process.env);
 
   const monthlyData = getMonthlyData();
 
@@ -102,13 +112,35 @@ const Dashboard = ({ transactions, budgets }) => {
     </div>
   );
 
+  const organizationName = getOrganizationName();
+  const isPersonalUse = organizationName === "Personal Use";
+
   return (
     <div className="fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-gray-600">
-          Welcome back! Here's your financial overview.
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+            <p className="text-gray-600">
+              Welcome back{user ? `, ${user.name}` : ""}! Here's your financial
+              overview.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+            {isPersonalUse ? (
+              <User size={20} className="text-gray-600" />
+            ) : (
+              <Building2 size={20} className="text-blue-600" />
+            )}
+            <span
+              className={`font-medium ${
+                isPersonalUse ? "text-gray-600" : "text-blue-600"
+              }`}
+            >
+              {organizationName}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Summary Cards */}

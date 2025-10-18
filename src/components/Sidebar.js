@@ -5,17 +5,23 @@ import {
   PieChart,
   BarChart3,
   TrendingUp,
+  MessageCircle,
   Settings,
+  LogOut,
+  User,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
 import "./Sidebar.css";
 
 const Sidebar = ({ activeTab, onTabChange }) => {
+  const { user, logout, getOrganizationName } = useAuth();
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "transactions", label: "Transactions", icon: CreditCard },
     { id: "budget", label: "Budget", icon: PieChart },
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "predictions", label: "Predictions", icon: TrendingUp },
+    { id: "chat", label: "Chat", icon: MessageCircle },
   ];
 
   return (
@@ -47,12 +53,20 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         </ul>
       </nav>
 
-      {/*<div className="sidebar-footer">
-        <button className="nav-link">
-          <Settings size={20} />
-          <span>Settings</span>
+      <div className="sidebar-footer">
+        {user && (
+          <div className="user-info">
+            <div className="user-details">
+              <p className="user-name">{user.name}</p>
+              <p className="user-email">{user.email}</p>
+            </div>
+          </div>
+        )}
+        <button className="nav-link logout-btn" onClick={logout}>
+          <LogOut size={20} />
+          <span>Logout</span>
         </button>
-      </div>*/}
+      </div>
     </aside>
   );
 };

@@ -58,6 +58,8 @@ const Predictions = () => {
     }).format(amount);
   };
 
+  // Chat moved to dedicated ChatBot component
+
   const getConfidenceColor = (confidence) => {
     if (confidence >= 0.8) return "#10b981"; // green
     if (confidence >= 0.6) return "#f59e0b"; // yellow
@@ -302,9 +304,8 @@ const Predictions = () => {
         </div>
       </div>
 
-      {activeView === "monthly"
-        ? renderMonthlyPredictions()
-        : renderYearlyPredictions()}
+      {activeView === "monthly" && renderMonthlyPredictions()}
+      {activeView === "yearly" && renderYearlyPredictions()}
 
       <div className="predictions-footer">
         <div className="disclaimer">

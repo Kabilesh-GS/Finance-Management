@@ -5,12 +5,16 @@ import Transactions from "./components/Transactions";
 import Budget from "./components/Budget";
 import Reports from "./components/Reports";
 import Predictions from "./components/Predictions";
+import ChatBot from "./components/ChatBot";
+import Login from "./components/Login";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./App.css";
 
 import budgetsData from "./models/Dataset/budgets_2024.json";
 import { parseCsvTextToTransactions } from "./utils/csvToTransactions";
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [transactions, setTransactions] = useState([]);
 
@@ -26,6 +30,28 @@ function App() {
     });
   };
 
+  // Load saved budgets from localStorage
+  const loadSavedBudgets = () => {
+    try {
+      const saved = localStorage.getItem("financeBudgets");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Failed to load saved budgets:", e);
+    }
+    return null;
+  };
+
+  // Save budgets to localStorage
+  const saveBudgets = (budgetsToSave) => {
+    try {
+      localStorage.setItem("financeBudgets", JSON.stringify(budgetsToSave));
+    } catch (e) {
+      console.error("Failed to save budgets:", e);
+    }
+  };
+
   // Load data from CSV on component mount
   useEffect(() => {
     const load = async () => {
@@ -38,7 +64,11 @@ function App() {
         const text = await res.text();
         const tx = parseCsvTextToTransactions(text);
         setTransactions(tx);
-        const updatedBudgets = calculateSpentAmounts(tx, budgetsData);
+
+        // Load saved budgets or use defaults
+        const savedBudgets = loadSavedBudgets();
+        const baseBudgets = savedBudgets || budgetsData;
+        const updatedBudgets = calculateSpentAmounts(tx, baseBudgets);
         setBudgets(updatedBudgets);
       } catch (e) {
         console.error("Failed to load CSV", e);
@@ -59,6 +89,10 @@ function App() {
     // Update budgets with new spent amounts
     const updatedBudgets = calculateSpentAmounts(updatedTransactions, budgets);
     setBudgets(updatedBudgets);
+
+    // Save budgets to localStorage (without spent amounts)
+    const budgetsToSave = updatedBudgets.map(({ spent, ...budget }) => budget);
+    saveBudgets(budgetsToSave);
   };
 
   const deleteTransaction = (id) => {
@@ -68,14 +102,21 @@ function App() {
     // Update budgets with new spent amounts
     const updatedBudgets = calculateSpentAmounts(updatedTransactions, budgets);
     setBudgets(updatedBudgets);
+
+    // Save budgets to localStorage (without spent amounts)
+    const budgetsToSave = updatedBudgets.map(({ spent, ...budget }) => budget);
+    saveBudgets(budgetsToSave);
   };
 
   const updateBudget = (category, newBudget) => {
-    setBudgets(
-      budgets.map((b) =>
-        b.category === category ? { ...b, budget: newBudget } : b
-      )
+    const updatedBudgets = budgets.map((b) =>
+      b.category === category ? { ...b, budget: newBudget } : b
     );
+    setBudgets(updatedBudgets);
+
+    // Save to localStorage (without spent amounts)
+    const budgetsToSave = updatedBudgets.map(({ spent, ...budget }) => budget);
+    saveBudgets(budgetsToSave);
   };
 
   const renderActiveComponent = () => {
@@ -102,16 +143,41 @@ function App() {
         return <Reports transactions={transactions} budgets={budgets} />;
       case "predictions":
         return <Predictions />;
+      case "chat":
+        return <ChatBot />;
       default:
         return <Dashboard transactions={transactions} budgets={budgets} />;
     }
   };
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="app">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
       <main className="main-content">{renderActiveComponent()}</main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
