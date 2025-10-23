@@ -9,6 +9,7 @@ import {
   Settings,
   LogOut,
   User,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import "./Sidebar.css";
@@ -22,6 +23,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
     { id: "reports", label: "Reports", icon: BarChart3 },
     { id: "predictions", label: "Predictions", icon: TrendingUp },
     { id: "chat", label: "Chat", icon: MessageCircle },
+    { id: "other", label: "Other", icon: Globe },
   ];
 
   return (

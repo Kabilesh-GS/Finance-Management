@@ -85,7 +85,6 @@ const Dashboard = ({ transactions, budgets }) => {
         (a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month)
       );
   };
-    console.log("ENV:", process.env);
 
   const monthlyData = getMonthlyData();
 

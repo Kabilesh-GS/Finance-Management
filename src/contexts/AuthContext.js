@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { auth, googleProvider } from "../services/firebase";
+import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
 
 const AuthContext = createContext();
 
@@ -15,31 +17,57 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("financeUser");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error("Error parsing saved user:", error);
-        localStorage.removeItem("financeUser");
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const mapped = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName,
+          email: firebaseUser.email,
+          imageUrl: firebaseUser.photoURL,
+          hd: firebaseUser.email?.split("@")[1] || null,
+          organizationName: firebaseUser.email?.split("@")[1]
+            ? firebaseUser.email
+                .split("@")[1]
+                .split(".")
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ")
+            : null,
+        };
+        setUser(mapped);
+      } else {
+        setUser(null);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("financeUser", JSON.stringify(userData));
+  const login = async () => {
+    await signInWithPopup(auth, googleProvider);
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("financeUser");
+  const logout = async () => {
+    await signOut(auth);
   };
 
   const getOrganizationName = () => {
     if (!user) return "Personal Use";
-    if (user.hd && user.hd !== user.email.split("@")[1]) {
+
+    // Check if it's a personal email service
+    const personalEmailDomains = [
+      "gmail.com",
+      "yahoo.com",
+      "outlook.com",
+      "hotmail.com",
+      "icloud.com",
+    ];
+    const emailDomain = user.email?.split("@")[1];
+
+    if (personalEmailDomains.includes(emailDomain)) {
+      return "Personal Use";
+    }
+
+    if (user.hd && user.hd !== emailDomain) {
       return user.hd;
     }
 

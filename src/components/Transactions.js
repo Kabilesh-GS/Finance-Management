@@ -14,6 +14,7 @@ const Transactions = ({
   transactions,
   onAddTransaction,
   onDeleteTransaction,
+  onImportCsv,
 }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -82,6 +83,15 @@ const Transactions = ({
     setDisplayCount(15);
   }, [searchTerm, filterType, filterCategory]);
 
+  const fileInputRef = React.useRef(null);
+  const handleCsvFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    onImportCsv && onImportCsv(text);
+    e.target.value = ""; // reset
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (
@@ -129,13 +139,28 @@ const Transactions = ({
             )}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowAddModal(true)}
-        >
-          <Plus size={20} />
-          Add Transaction
-        </button>
+        <div className="flex gap-2">
+          <button
+            className="btn btn-secondary"
+            onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          >
+            Import CSV
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            style={{display: 'none'}}
+            onChange={handleCsvFile}
+          />
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus size={20} />
+            Add Transaction
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

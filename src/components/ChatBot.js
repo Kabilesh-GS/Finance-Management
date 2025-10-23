@@ -14,11 +14,9 @@ const ChatBot = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const m = await fetch("http://localhost:8000/predict");
-        const y = await fetch("http://localhost:8000/predict/year");
-        if (!m.ok || !y.ok) throw new Error("Failed to fetch predictions");
-        setPredictions(await m.json());
-        setYearlyPredictions(await y.json());
+        // Predictions now computed locally elsewhere; skip remote fetch
+        setPredictions(null);
+        setYearlyPredictions(null);
       } catch (e) {
         setError(e.message);
       } finally {
@@ -26,6 +24,51 @@ const ChatBot = () => {
       }
     };
     load();
+  }, []);
+
+  // Market data: gold only (stocks removed per request)
+  const [gold, setGold] = useState(null);
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        const res = await fetch(
+          "https://api.exchangerate-api.com/v4/latest/USD"
+        );
+        if (res.ok) {
+          const data = await res.json();
+          return data.rates?.INR || 83.0;
+        }
+      } catch (_) {}
+      return 83.0;
+    };
+
+    const fetchGold = async () => {
+      try {
+        const res = await fetch("https://www.goldapi.io/api/XAU/USD", {
+          headers: { "x-access-token": "goldapi-zwmcsmgyvbwx7-io" },
+        });
+        if (!res.ok) throw new Error("gold fetch failed");
+        const data = await res.json();
+        const inr = await fetchExchangeRate();
+        const ozInInr = data.price * inr;
+        const perGram = ozInInr / 31.1035;
+        const per8g = perGram * 8;
+        setGold({
+          per8g,
+          perGram,
+          perOunce: ozInInr,
+          usdPerOunce: data.price,
+          inrRate: inr,
+        });
+      } catch (_) {
+        setGold(null);
+      }
+    };
+
+    // Stocks removed
+
+    fetchGold();
   }, []);
 
   const formatCurrency = (amount) =>
@@ -43,8 +86,6 @@ const ChatBot = () => {
     const query = (q || "").toLowerCase();
     const monthly = predictions;
     const yearly = yearlyPredictions;
-    if (!monthly && !yearly)
-      return "Predictions are still loading. Please try again shortly.";
 
     if (
       query.includes("income") &&
@@ -86,9 +127,35 @@ const ChatBot = () => {
           p.savings
         )}.`;
     }
+    // Gold queries
+    if (query.includes("gold")) {
+      if (!gold) return "Gold price data is not available right now.";
+      if (
+        query.includes("8g") ||
+        query.includes("8 g") ||
+        query.includes("8 grams") ||
+        query.includes("per 8")
+      ) {
+        return `Gold price per 8g is ₹${gold.per8g.toFixed(2)} (INR).`;
+      }
+      if (query.includes("gram")) {
+        return `Gold price per gram is ₹${gold.perGram.toFixed(2)} (INR).`;
+      }
+      if (query.includes("ounce")) {
+        return `Gold price per ounce is ₹${gold.perOunce.toFixed(
+          2
+        )} (INR), about $${gold.usdPerOunce.toFixed(2)}.`;
+      }
+      return `Gold price per 8g: ₹${gold.per8g.toFixed(
+        2
+      )}, per gram: ₹${gold.perGram.toFixed(2)}.`;
+    }
+
+    // Stock queries removed per request
+
     const insight = monthly?.insights?.[0] || yearly?.insights?.[0];
     if (insight?.message) return insight.message;
-    return "Try asking about income, expenses, savings, confidence, or annual totals.";
+    return "Try asking about income, expenses, savings, confidence, gold price (8g/gram/ounce), or stocks (e.g., Reliance).";
   };
 
   const handleSend = () => {

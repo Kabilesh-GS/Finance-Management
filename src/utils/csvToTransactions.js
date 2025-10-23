@@ -60,8 +60,12 @@ export function parseCsvTextToTransactions(csvText) {
       const amount =
         typeof rawValue === "number" ? rawValue : parseFloat(rawValue || 0);
       if (amount && amount > 0) {
+        const uniqueId =
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.parse(isoDate)}-${idx}-income-${cat}`;
         transactions.push({
-          id: Number(`${Date.parse(isoDate)}${idx}${cat.length}`),
+          id: uniqueId,
           type: "income",
           category:
             cat === "sales"
@@ -82,8 +86,12 @@ export function parseCsvTextToTransactions(csvText) {
         typeof rawValue === "number" ? rawValue : parseFloat(rawValue || 0);
       if (amount && amount > 0) {
         const pretty = mapExpenseCategory(cat);
+        const uniqueId =
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.parse(isoDate)}-${idx}-expense-${cat}`;
         transactions.push({
-          id: Number(`${Date.parse(isoDate)}${idx}${cat.length + 1}`),
+          id: uniqueId,
           type: "expense",
           category: pretty,
           amount,
