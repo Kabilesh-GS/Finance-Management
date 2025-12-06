@@ -8,70 +8,186 @@ import {
   Target,
 } from "lucide-react";
 import "./Predictions.css";
+import { transactionsToCsv } from "../utils/transactionsToCsv";
 
-const Predictions = ({ transactions }) => {
+const Predictions = ({ transactions = [] }) => {
   const [predictions, setPredictions] = useState(null);
   const [yearlyPredictions, setYearlyPredictions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeView, setActiveView] = useState("monthly");
 
+  // Generate a simple hash/identifier from transactions to detect changes
+  const getTransactionsHash = (txs) => {
+    if (!txs || txs.length === 0) return "";
+    // Create a simple hash based on transaction count and IDs
+    const ids = txs
+      .map((t) => t.id || "")
+      .sort()
+      .join(",");
+    const count = txs.length;
+    return `${count}-${ids.substring(0, 100)}`; // Use first 100 chars of IDs
+  };
+
+  // Load predictions from localStorage
+  const loadFromLocalStorage = () => {
+    try {
+      const stored = localStorage.getItem("financePredictions");
+      const storedYearly = localStorage.getItem("financeYearlyPredictions");
+      const storedHash = localStorage.getItem("financePredictionsHash");
+
+      if (stored && storedYearly && storedHash) {
+        const currentHash = getTransactionsHash(transactions);
+        // Only use stored data if transactions haven't changed
+        if (storedHash === currentHash && transactions.length > 0) {
+          return {
+            predictions: JSON.parse(stored),
+            yearlyPredictions: JSON.parse(storedYearly),
+          };
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load predictions from localStorage:", e);
+    }
+    return null;
+  };
+
+  // Save predictions to localStorage
+  const saveToLocalStorage = (monthlyData, yearlyData) => {
+    try {
+      const hash = getTransactionsHash(transactions);
+      localStorage.setItem("financePredictions", JSON.stringify(monthlyData));
+      localStorage.setItem(
+        "financeYearlyPredictions",
+        JSON.stringify(yearlyData)
+      );
+      localStorage.setItem("financePredictionsHash", hash);
+    } catch (e) {
+      console.error("Failed to save predictions to localStorage:", e);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
+
+    // First, try to load from localStorage
+    const cached = loadFromLocalStorage();
+    if (cached) {
+      setPredictions(cached.predictions);
+      setYearlyPredictions(cached.yearlyPredictions);
+      setLoading(false);
+      return;
+    }
+
     async function loadPredictions() {
       try {
         setLoading(true);
-        // Try Python backend first
-        const resp = await fetch(
-          process.env.REACT_APP_PY_API_BASE
-            ? `${process.env.REACT_APP_PY_API_BASE}/predict`
-            : "/py/predict",
-          { method: "GET" }
-        );
-        if (resp.ok) {
-          const data = await resp.json();
-          if (!cancelled) {
-            setPredictions(data);
-            // For yearly from Python
-            try {
-              const yResp = await fetch(
-                process.env.REACT_APP_PY_API_BASE
-                  ? `${process.env.REACT_APP_PY_API_BASE}/predict/year`
-                  : "/py/predict/year"
-              );
-              if (yResp.ok) {
-                const yData = await yResp.json();
-                setYearlyPredictions(yData);
+        setError(null);
+
+        const apiBase = process.env.REACT_APP_PY_API_BASE
+          ? process.env.REACT_APP_PY_API_BASE
+          : "http://localhost:8000";
+        const hasTransactions = transactions && transactions.length > 0;
+        const csvData = hasTransactions
+          ? transactionsToCsv(transactions)
+          : null;
+
+        // CSV data is required - if no transactions uploaded, show helpful error
+        if (!csvData || !csvData.trim()) {
+          throw new Error(
+            "No CSV data available. Please upload a CSV file in the Transactions page first."
+          );
+        }
+
+        // Send CSV via POST to Python backend
+        const monthlyUrl = `${apiBase}/predict`;
+        const monthlyOptions = {
+          method: "POST",
+          headers: { "Content-Type": "text/csv" },
+          body: csvData,
+        };
+
+        const resp = await fetch(monthlyUrl, monthlyOptions);
+
+        if (!resp.ok) {
+          throw new Error(`Failed to load predictions: ${resp.statusText}`);
+        }
+
+        const data = await resp.json();
+        if (!cancelled) {
+          setPredictions(data);
+
+          // Fetch yearly predictions from Python backend
+          let yearlyData = null;
+          try {
+            const yearlyUrl = `${apiBase}/predict/year`;
+            const yearlyOptions = {
+              method: "POST",
+              headers: { "Content-Type": "text/csv" },
+              body: csvData,
+            };
+
+            const yResp = await fetch(yearlyUrl, yearlyOptions);
+
+            if (yResp.ok) {
+              const yData = await yResp.json();
+              // Convert Python format to frontend format (array of years)
+              if (yData.predictions && !Array.isArray(yData.predictions)) {
+                // Python returns single year, convert to array format for 2-year view
+                yearlyData = {
+                  predictions: [
+                    yData.predictions,
+                    yData.predictions, // Use same data for year 2 (can be enhanced later)
+                  ],
+                  insights: yData.insights || [],
+                };
               } else {
-                // fallback yearly computed from monthly
-                setYearlyPredictions(
-                  computeYearlySummary(data.monthly_predictions)
-                );
+                yearlyData = yData;
               }
-              setError(null);
-            } catch (_) {
-              setYearlyPredictions(
-                computeYearlySummary(data.monthly_predictions)
-              );
+              setYearlyPredictions(yearlyData);
+            } else {
+              // If yearly endpoint fails, create simple summary from monthly predictions
+              if (data.monthly_predictions) {
+                const year1 = data.monthly_predictions.slice(0, 12).reduce(
+                  (acc, month) => ({
+                    income: acc.income + (month.income || 0),
+                    expenses: acc.expenses + (month.expenses || 0),
+                    savings: 0,
+                  }),
+                  { income: 0, expenses: 0, savings: 0 }
+                );
+                year1.savings = year1.income - year1.expenses;
+                year1.confidence = data.summary?.confidence || 0.7;
+
+                yearlyData = {
+                  predictions: [year1, year1],
+                };
+                setYearlyPredictions(yearlyData);
+              }
             }
+          } catch (yErr) {
+            console.error("Error loading yearly predictions:", yErr);
+            // Continue with monthly predictions only
           }
-        } else {
-          // Fallback to JS model
-          const computed = computeMonthlyPredictions(transactions || []);
-          const yearly = computeYearlySummary(computed.monthly_predictions);
-          if (!cancelled) {
-            setPredictions(computed);
-            setYearlyPredictions(yearly);
-            setError(null);
+
+          // Save to localStorage after successful fetch
+          if (data) {
+            // Use yearlyData if available, otherwise create empty structure
+            const finalYearlyData = yearlyData || {
+              predictions: [],
+              insights: [],
+            };
+            saveToLocalStorage(data, finalYearlyData);
           }
         }
       } catch (e) {
-        const computed = computeMonthlyPredictions(transactions || []);
-        const yearly = computeYearlySummary(computed.monthly_predictions);
         if (!cancelled) {
-          setPredictions(computed);
-          setYearlyPredictions(yearly);
-          setError(null);
+          setError(
+            e.message ||
+              "Failed to load predictions from Python backend. Please ensure the backend server is running."
+          );
+          setPredictions(null);
+          setYearlyPredictions(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -104,200 +220,6 @@ const Predictions = ({ transactions }) => {
     if (confidence >= 0.8) return "High";
     if (confidence >= 0.6) return "Medium";
     return "Low";
-  };
-
-  // Simple helpers to compute per-user predictions locally
-  const monthKey = (isoDate) => {
-    const d = new Date(isoDate);
-    if (Number.isNaN(d.getTime())) return null;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  };
-
-  const aggregateByMonth = (tx) => {
-    const map = new Map();
-    tx.forEach((t) => {
-      const key = monthKey(t.date);
-      if (!key) return;
-      const entry = map.get(key) || { income: 0, expenses: 0 };
-      if (t.type === "income") entry.income += Number(t.amount) || 0;
-      if (t.type === "expense") entry.expenses += Number(t.amount) || 0;
-      map.set(key, entry);
-    });
-    const rows = Array.from(map.entries())
-      .map(([month, v]) => ({ month, income: v.income, expenses: v.expenses }))
-      .sort((a, b) => (a.month < b.month ? -1 : 1));
-    return rows;
-  };
-
-  const linearTrendNext = (values) => {
-    // Very small linear regression over index to project next value
-    const n = values.length;
-    if (n === 0) return 0;
-    if (n === 1) return values[0];
-    let sumX = 0;
-    let sumY = 0;
-    let sumXY = 0;
-    let sumX2 = 0;
-    for (let i = 0; i < n; i++) {
-      const x = i + 1;
-      const y = values[i];
-      sumX += x;
-      sumY += y;
-      sumXY += x * y;
-      sumX2 += x * x;
-    }
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX || 1);
-    const intercept = sumY / n - slope * (sumX / n);
-    const nextX = n + 1;
-    return intercept + slope * nextX;
-  };
-
-  const computeConfidence = (histLen) => {
-    if (histLen >= 12) return 0.8;
-    if (histLen >= 6) return 0.65;
-    if (histLen >= 3) return 0.5;
-    return 0.35;
-  };
-
-  const nextMonthKey = (lastKey) => {
-    const [y, m] = lastKey.split("-").map((n) => parseInt(n, 10));
-    const date = new Date(y, m - 1, 1);
-    date.setMonth(date.getMonth() + 1);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}`;
-  };
-
-  const computeMonthlyPredictions = (tx) => {
-    const monthly = aggregateByMonth(tx);
-    const incomeSeries = monthly.map((r) => r.income);
-    const expenseSeries = monthly.map((r) => r.expenses);
-
-    // Start from next month after last historical (or current month if none)
-    let currentMonth = monthly.length
-      ? nextMonthKey(monthly[monthly.length - 1].month)
-      : monthKey(new Date().toISOString());
-
-    const monthly_predictions = [];
-    for (let i = 0; i < 12; i++) {
-      const nextIncome = Math.max(0, linearTrendNext(incomeSeries));
-      const nextExpenses = Math.max(0, linearTrendNext(expenseSeries));
-      const nextSavings = nextIncome - nextExpenses;
-      monthly_predictions.push({
-        month: currentMonth,
-        income: nextIncome,
-        expenses: nextExpenses,
-        savings: nextSavings,
-      });
-      // Append predicted values to influence subsequent months
-      incomeSeries.push(nextIncome);
-      expenseSeries.push(nextExpenses);
-      currentMonth = nextMonthKey(currentMonth);
-    }
-
-    const histIncomeAvg = monthly.length
-      ? monthly.reduce((sum, r) => sum + r.income, 0) / monthly.length
-      : 0;
-    const histExpenseAvg = monthly.length
-      ? monthly.reduce((sum, r) => sum + r.expenses, 0) / monthly.length
-      : 0;
-    const avg_monthly_income = histIncomeAvg;
-    const avg_monthly_expenses = histExpenseAvg;
-    const avg_monthly_savings = avg_monthly_income - avg_monthly_expenses;
-    const confidence = computeConfidence(monthly.length);
-
-    const insights = [];
-    // Compare first projected month to historical average
-    if (monthly_predictions[0].expenses > monthly_predictions[0].income) {
-      insights.push({
-        type: "warning",
-        message: "Projected expenses exceed income next month.",
-      });
-    } else if (
-      monthly_predictions[0].savings > avg_monthly_savings &&
-      monthly.length > 0
-    ) {
-      insights.push({
-        type: "info",
-        message: "Projected savings trend is improving.",
-      });
-    }
-
-    return {
-      monthly_predictions,
-      summary: {
-        avg_monthly_income,
-        avg_monthly_expenses,
-        avg_monthly_savings,
-        confidence,
-      },
-      insights,
-    };
-  };
-
-  const computeYearlySummary = (monthly_predictions) => {
-    const baseMonths = monthly_predictions || [];
-    // Ensure we have 24 months by projecting forward from the provided series
-    const months = [...baseMonths];
-    let lastMonthKey = months.length
-      ? months[months.length - 1].month
-      : monthKey(new Date().toISOString());
-    let incomeSeries = months.map((m) => m.income);
-    let expenseSeries = months.map((m) => m.expenses);
-    while (months.length < 24) {
-      const nextIncome = Math.max(0, linearTrendNext(incomeSeries));
-      const nextExpenses = Math.max(0, linearTrendNext(expenseSeries));
-      lastMonthKey = nextMonthKey(lastMonthKey);
-      months.push({
-        month: lastMonthKey,
-        income: nextIncome,
-        expenses: nextExpenses,
-        savings: nextIncome - nextExpenses,
-      });
-      incomeSeries.push(nextIncome);
-      expenseSeries.push(nextExpenses);
-    }
-
-    const sumRange = (arr, start, end) =>
-      arr.slice(start, end).reduce((s, m) => s + (m || 0), 0);
-
-    const year1Income = sumRange(
-      months.map((m) => m.income),
-      0,
-      12
-    );
-    const year1Expenses = sumRange(
-      months.map((m) => m.expenses),
-      0,
-      12
-    );
-    const year1Savings = year1Income - year1Expenses;
-    const year2Income = sumRange(
-      months.map((m) => m.income),
-      12,
-      24
-    );
-    const year2Expenses = sumRange(
-      months.map((m) => m.expenses),
-      12,
-      24
-    );
-    const year2Savings = year2Income - year2Expenses;
-
-    const year1 = {
-      income: year1Income,
-      expenses: year1Expenses,
-      savings: year1Savings,
-      confidence: computeConfidence(baseMonths.length + 6),
-    };
-    const year2 = {
-      income: year2Income,
-      expenses: year2Expenses,
-      savings: year2Savings,
-      confidence: computeConfidence(baseMonths.length + 12),
-    };
-    return { predictions: [year1, year2] };
   };
 
   const renderInsightIcon = (type) => {
@@ -506,7 +428,9 @@ const Predictions = ({ transactions }) => {
           <p>{error}</p>
           <button
             onClick={() => {
-              /* recompute handled by effect */
+              setError(null);
+              setLoading(true);
+              window.location.reload();
             }}
             className="retry-button"
           >

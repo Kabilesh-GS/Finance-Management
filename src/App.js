@@ -13,20 +13,11 @@ import "./App.css";
 
 import budgetsData from "./models/Dataset/budgets_2024.json";
 import { parseCsvTextToTransactions } from "./utils/csvToTransactions";
-import { db } from "./services/firebase";
-import {
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  onSnapshot,
-} from "firebase/firestore";
 
 function AppContent() {
   const { isAuthenticated, loading, user } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [transactions, setTransactions] = useState([]);
-
   const [budgets, setBudgets] = useState([]);
 
   // Calculate actual spent amounts from transactions
@@ -39,65 +30,55 @@ function AppContent() {
     });
   };
 
-  // Load saved budgets from localStorage
-  const loadSavedBudgets = () => {
+  // Load data from localStorage on mount
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem("financeBudgets");
-      if (saved) {
-        return JSON.parse(saved);
+      // Load transactions
+      const savedTransactions = localStorage.getItem("financeTransactions");
+      if (savedTransactions) {
+        const tx = JSON.parse(savedTransactions);
+        setTransactions(tx);
+      }
+
+      // Load budgets
+      const savedBudgets = localStorage.getItem("financeBudgets");
+      const loadedTransactions = savedTransactions
+        ? JSON.parse(savedTransactions)
+        : [];
+      if (savedBudgets) {
+        const savedBudgetsData = JSON.parse(savedBudgets);
+        setBudgets(calculateSpentAmounts(loadedTransactions, savedBudgetsData));
+      } else {
+        // Initialize with default budgets if none saved
+        setBudgets(calculateSpentAmounts(loadedTransactions, budgetsData));
       }
     } catch (e) {
-      console.error("Failed to load saved budgets:", e);
+      console.error("Failed to load data from localStorage:", e);
+      // Initialize with default budgets on error
+      setBudgets(calculateSpentAmounts([], budgetsData));
     }
-    return null;
-  };
+  }, []);
 
-  // Save budgets to localStorage
-  const saveBudgets = (budgetsToSave) => {
+  // Save transactions to localStorage whenever they change
+  useEffect(() => {
     try {
+      localStorage.setItem("financeTransactions", JSON.stringify(transactions));
+    } catch (e) {
+      console.error("Failed to save transactions to localStorage:", e);
+    }
+  }, [transactions]);
+
+  // Save budgets to localStorage whenever they change (without spent amounts)
+  useEffect(() => {
+    try {
+      const budgetsToSave = budgets.map(({ spent, ...b }) => b);
       localStorage.setItem("financeBudgets", JSON.stringify(budgetsToSave));
     } catch (e) {
-      console.error("Failed to save budgets:", e);
+      console.error("Failed to save budgets to localStorage:", e);
     }
-  };
+  }, [budgets]);
 
-  // Load and live-sync data per logged-in user; clear immediately on user change
-  useEffect(() => {
-    // Clear current state when user changes (prevents previous user's data flash)
-    setTransactions([]);
-    setBudgets(calculateSpentAmounts([], budgetsData));
-
-    if (!user) return;
-
-    const userDocRef = doc(collection(db, "users"), user.id);
-    // Ensure the doc exists; if not, seed defaults once
-    getDoc(userDocRef)
-      .then(async (snapshot) => {
-        if (!snapshot.exists()) {
-          await setDoc(userDocRef, { transactions: [], budgets: budgetsData });
-        }
-      })
-      .catch((e) => console.error("Failed to ensure user doc", e));
-
-    // Subscribe to changes for this user
-    const unsub = onSnapshot(
-      userDocRef,
-      (snap) => {
-        const data = snap.data() || {};
-        const tx = data.transactions || [];
-        const baseBudgets = data.budgets || budgetsData;
-        setTransactions(tx);
-        setBudgets(calculateSpentAmounts(tx, baseBudgets));
-      },
-      (err) => console.error("User doc subscription error", err)
-    );
-
-    return () => {
-      unsub();
-    };
-  }, [user]);
-
-  const addTransaction = async (transaction) => {
+  const addTransaction = (transaction) => {
     const newTransaction = {
       ...transaction,
       id: Date.now(),
@@ -109,81 +90,30 @@ function AppContent() {
     // Update budgets with new spent amounts
     const updatedBudgets = calculateSpentAmounts(updatedTransactions, budgets);
     setBudgets(updatedBudgets);
-
-    // Persist to Firestore per user
-    try {
-      if (user) {
-        const userDocRef = doc(collection(db, "users"), user.id);
-        const budgetsToSave = updatedBudgets.map(({ spent, ...b }) => b);
-        await setDoc(
-          userDocRef,
-          { transactions: updatedTransactions, budgets: budgetsToSave },
-          { merge: true }
-        );
-      }
-    } catch (e) {
-      console.error("Failed to save transaction", e);
-    }
   };
 
-  const deleteTransaction = async (id) => {
+  const deleteTransaction = (id) => {
     const updatedTransactions = transactions.filter((t) => t.id !== id);
     setTransactions(updatedTransactions);
 
     // Update budgets with new spent amounts
     const updatedBudgets = calculateSpentAmounts(updatedTransactions, budgets);
     setBudgets(updatedBudgets);
-
-    // Persist to Firestore per user
-    try {
-      if (user) {
-        const userDocRef = doc(collection(db, "users"), user.id);
-        const budgetsToSave = updatedBudgets.map(({ spent, ...b }) => b);
-        await setDoc(
-          userDocRef,
-          { transactions: updatedTransactions, budgets: budgetsToSave },
-          { merge: true }
-        );
-      }
-    } catch (e) {
-      console.error("Failed to delete transaction", e);
-    }
   };
 
-  const updateBudget = async (category, newBudget) => {
+  const updateBudget = (category, newBudget) => {
     const updatedBudgets = budgets.map((b) =>
       b.category === category ? { ...b, budget: newBudget } : b
     );
     setBudgets(updatedBudgets);
-
-    // Persist to Firestore per user
-    try {
-      if (user) {
-        const userDocRef = doc(collection(db, "users"), user.id);
-        const budgetsToSave = updatedBudgets.map(({ spent, ...b }) => b);
-        await setDoc(userDocRef, { budgets: budgetsToSave }, { merge: true });
-      }
-    } catch (e) {
-      console.error("Failed to update budget", e);
-    }
   };
 
-  const importTransactionsFromCsv = async (csvText) => {
+  const importTransactionsFromCsv = (csvText) => {
     try {
       const tx = parseCsvTextToTransactions(csvText);
       setTransactions(tx);
       const updatedBudgets = calculateSpentAmounts(tx, budgetsData);
       setBudgets(updatedBudgets);
-
-      if (user) {
-        const userDocRef = doc(collection(db, "users"), user.id);
-        const budgetsToSave = updatedBudgets.map(({ spent, ...b }) => b);
-        await setDoc(
-          userDocRef,
-          { transactions: tx, budgets: budgetsToSave },
-          { merge: true }
-        );
-      }
     } catch (e) {
       console.error("Failed to import CSV", e);
     }
@@ -215,7 +145,7 @@ function AppContent() {
       case "predictions":
         return <Predictions transactions={transactions} />;
       case "chat":
-        return <ChatBot />;
+        return <ChatBot transactions={transactions} />;
       case "other":
         return <Other />;
       default:

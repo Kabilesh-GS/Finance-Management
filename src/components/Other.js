@@ -31,48 +31,62 @@ const Other = () => {
     return 83.0; // fallback rate
   };
 
-  const gold_key = process.env.REACT_APP_GOLD_API_KEY;
   const fetchGoldPrices = async () => {
     try {
-      // Using goldapi.io for accurate gold prices
-      const response = await fetch("https://www.goldapi.io/api/XAU/USD", {
+      const gold_key = process.env.REACT_APP_GOLD_API_KEY;
+      if (!gold_key) throw new Error("Missing REACT_APP_GOLD_API_KEY in .env");
+
+      // Request INR first (preferred). If API returns USD, we'll convert.
+      const response = await fetch("https://www.goldapi.io/api/XAU/INR", {
         headers: {
           "x-access-token": gold_key,
         },
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error("Failed to fetch gold prices");
+        console.error("Gold API error", response.status, data);
+        throw new Error(data.message || `Gold API returned ${response.status}`);
       }
 
-      const data = await response.json();
+      // Determine price-per-ounce in INR
+      let goldPriceInrPerOunce;
+      if (data.currency && data.currency.toUpperCase() === "INR") {
+        // API already returned INR
+        goldPriceInrPerOunce = data.price;
+      } else {
+        // API returned USD (or unspecified) — convert using exchange rate
+        const usdToInr = await fetchExchangeRate();
+        goldPriceInrPerOunce = data.price * usdToInr;
+      }
 
-      // Get current USD to INR exchange rate
-      const usdToInr = await fetchExchangeRate();
-      const goldPriceInrPerOunce = data.price * usdToInr;
-
-      // Convert from ounce to 8 grams (1 ounce = 31.1035 grams)
+      // Convert ounce -> grams -> 8 grams
       const gramsPerOunce = 31.1035;
       const goldPriceInrPerGram = goldPriceInrPerOunce / gramsPerOunce;
       const goldPriceInrPer8Grams = goldPriceInrPerGram * 8;
 
       setGoldPrices({
         price: goldPriceInrPer8Grams,
-        change: data.change || 0,
-        changePercent: data.changePercent || 0,
+        change: data.change ?? 0,
+        changePercent: data.changePercent ?? 0,
         currency: "INR",
         unit: "per 8 grams",
-        timestamp: data.timestamp,
-        usdPrice: data.price,
-        exchangeRate: usdToInr,
+        timestamp: data.timestamp ?? Date.now(),
+        usdPrice:
+          data.currency && data.currency.toUpperCase() === "USD"
+            ? data.price
+            : null,
+        exchangeRate:
+          data.currency && data.currency.toUpperCase() === "INR"
+            ? null
+            : await fetchExchangeRate(),
         pricePerGram: goldPriceInrPerGram,
         pricePerOunce: goldPriceInrPerOunce,
       });
     } catch (err) {
       console.error("Error fetching gold prices:", err);
-      // Fallback data if API fails
       setGoldPrices({
-        price: 47500, // Approximate price for 8 grams
+        price: 47500,
         change: 0,
         changePercent: 0,
         currency: "INR",

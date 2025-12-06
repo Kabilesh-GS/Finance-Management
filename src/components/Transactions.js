@@ -89,7 +89,7 @@ const Transactions = ({
     if (!file) return;
     const text = await file.text();
     onImportCsv && onImportCsv(text);
-    e.target.value = ""; // reset
+    // File input value reset removed - file selection will persist
   };
 
   const handleSubmit = (e) => {

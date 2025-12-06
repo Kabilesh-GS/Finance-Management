@@ -1,25 +1,43 @@
 import pandas as pd
 import numpy as np
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
+import warnings
+warnings.filterwarnings("ignore")
+
+import logging
+logging.getLogger("statsmodels").setLevel(logging.ERROR)
+
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
 class FinancialPredictor:
     def __init__(self):
-        self.model_income = LinearRegression()
-        self.model_expenses = LinearRegression()
+        self.model_income = None
+        self.model_expenses = None
 
-    def preprocess(self, csv_path):
-        # Load CSV - handle both relative and absolute paths
+    def preprocess(self, csv_input):
+        """
+        Preprocess CSV data. csv_input can be:
+        - A file path (string)
+        - CSV content (string)
+        - A pandas DataFrame
+        """
         import os
-        if not os.path.isabs(csv_path):
-            # If relative path, look relative to current file location
-            csv_path = os.path.join(os.path.dirname(__file__), csv_path)
-        df = pd.read_csv(csv_path, parse_dates=["date"])
+        from io import StringIO
         
-        # Extract month as YYYY-MM
-        df['month'] = df['date'].dt.to_period("M").astype(str)
+        # If it's a DataFrame, use it directly
+        if isinstance(csv_input, pd.DataFrame):
+            df = csv_input.copy()
+        # If it's a file path (string and exists as file)
+        elif isinstance(csv_input, str) and os.path.exists(csv_input):
+            csv_path = csv_input
+            if not os.path.isabs(csv_path):
+                csv_path = os.path.join(os.path.dirname(__file__), csv_path)
+            df = pd.read_csv(csv_path, parse_dates=["date"])
+        # If it's CSV content (string)
+        else:
+            df = pd.read_csv(StringIO(csv_input), parse_dates=["date"])
+        
+        df["month"] = df["date"].dt.to_period("M").astype(str)
 
-        # Aggregate daily → monthly
         monthly = df.groupby("month").agg({
             "sales": "sum",
             "consulting": "sum",
@@ -37,87 +55,175 @@ class FinancialPredictor:
         # Totals
         monthly["income_total"] = monthly[["sales", "consulting", "investment"]].sum(axis=1)
         monthly["expenses_total"] = monthly[["payroll", "rent", "utilities", "technology", "marketing", "travel", "professional_services", "misc"]].sum(axis=1)
-        monthly["savings"] = monthly["income_total"] - monthly["expenses_total"]
-        monthly["time_idx"] = np.arange(len(monthly))
+        monthly["month_dt"] = pd.to_datetime(monthly["month"])
+        monthly = monthly.sort_values("month_dt").reset_index(drop=True)
 
         return monthly
 
-    def calculate_confidence(self, df, target="expenses_total"):
-        if len(df) < 2:
-            return 0.3
+    def optimized_sarima(self, series, seasonal_period=12):
+        """
+        Optimize SARIMA model by testing different parameter combinations and selecting the best one based on AIC.
+        """
+        import warnings
+        import logging
+        warnings.filterwarnings("ignore")
+        logging.getLogger("statsmodels").setLevel(logging.ERROR)
 
-        X = df[['time_idx']]
-        y = df[target]
-        model = LinearRegression().fit(X, y)
-        y_pred = model.predict(X)
+        p = d = q = [0, 1, 2]
+        P = Q = [0, 1]
 
-        r2 = max(0, r2_score(y, y_pred))
-        n = len(df)
-        base = 0.6 if n < 6 else (0.75 if n < 12 else 0.85)
+        if series.diff().abs().mean() > series.abs().mean() * 0.01:
+            D_options = [0, 1]
+        else:
+            D_options = [1]
 
-        confidence = 0.5 * base + 0.5 * (0.3 + 0.7 * r2)
-        return round(min(confidence, 0.99), 2)
+        best_aic = float("inf")
+        best_model = None
+        best_cfg = None
 
-    def predict_next_month(self, csv_path):
-        df = self.preprocess(csv_path)
+        print("⚡ Optimized SARIMA tuning...")
 
-        last_month = pd.to_datetime(df['month'].iloc[-1])
-        
-        X = df[['time_idx']]
-        self.model_income.fit(X, df['income_total'])
-        self.model_expenses.fit(X, df['expenses_total'])
+        for order in [(p_, d_, q_) for p_ in p for d_ in d for q_ in q]:
+            if order == (0, 0, 0):
+                continue
 
-        # Predict next 12 months
-        monthly_predictions = []
+            for seasonal in [(P_, D_, Q_) for P_ in P for D_ in D_options for Q_ in Q]:
+                seasonal_order = seasonal + (seasonal_period,)
+
+                try:
+                    model = SARIMAX(
+                        series,
+                        order=order,
+                        seasonal_order=seasonal_order,
+                        enforce_stationarity=True,
+                        enforce_invertibility=True
+                    ).fit(
+                        method="powell",
+                        maxiter=50,
+                        disp=False
+                    )
+
+                    if model.aic < best_aic:
+                        best_aic = model.aic
+                        best_model = model
+                        best_cfg = (order, seasonal_order)
+
+                except Exception:
+                    continue
+
+        print("🔥 Best SARIMA:", best_cfg, "| AIC:", best_aic)
+        return best_model if best_model else SARIMAX(series, order=(1, 1, 1), seasonal_order=(1, 1, 1, 12)).fit(disp=False)
+
+    def calculate_confidence(self, model, series, forecast):
+        """
+        Calculate confidence score based on SARIMA model quality.
+        """
+        try:
+            # 1. AIC normalization (lower AIC = better)
+            aic = model.aic
+            aic_score = np.exp(-aic / 10000)
+
+            # 2. Residual variance (lower variance = more stable)
+            residuals = model.resid
+            var = np.var(residuals)
+            var_score = np.exp(-var / (np.mean(series)**2 + 1e-8))
+
+            # 3. Forecast standard errors (model uncertainty)
+            try:
+                _, se = model.get_forecast(steps=len(forecast)).summary_frame()[["mean", "mean_se"]].values.T
+                se_score = np.exp(-np.mean(se) / (np.mean(series) + 1e-8))
+            except:
+                se_score = 0.5
+
+            # Combine scores
+            confidence = (0.4 * aic_score) + (0.3 * var_score) + (0.3 * se_score)
+            confidence = float(max(0.05, min(confidence, 0.99)))
+            return confidence
+        except Exception:
+            # Fallback confidence
+            return 0.7
+
+    def predict_next_month(self, csv_input):
+        """
+        Predict next 12 months using SARIMA model. csv_input can be file path, CSV string, or DataFrame.
+        """
+        df = self.preprocess(csv_input)
+
+        income_series = df["income_total"]
+        expenses_series = df["expenses_total"]
+
+        self.model_income = self.optimized_sarima(income_series)
+        self.model_expenses = self.optimized_sarima(expenses_series)
+
+        income_pred = self.model_income.forecast(12)
+        expenses_pred = self.model_expenses.forecast(12)
+
+        last_month = df["month_dt"].iloc[-1]
+        predictions = []
+
         total_income = 0
         total_expenses = 0
-        
-        for i in range(1, 13):  # Next 12 months
-            next_idx = np.array([[df['time_idx'].iloc[-1] + i]])
-            income_pred = int(self.model_income.predict(next_idx)[0])
-            expenses_pred = int(self.model_expenses.predict(next_idx)[0])
-            savings_pred = income_pred - expenses_pred
-            
-            # Calculate the month name
-            month_date = last_month + pd.DateOffset(months=i)
-            month_name = month_date.strftime("%Y-%m")
-            
-            monthly_predictions.append({
-                "month": month_name,
-                "income": income_pred,
-                "expenses": expenses_pred,
-                "savings": savings_pred
-            })
-            
-            total_income += income_pred
-            total_expenses += expenses_pred
 
-        total_savings = total_income - total_expenses
-        confidence = self.calculate_confidence(df, "expenses_total")
+        for i in range(1, 13):
+            dt = last_month + pd.DateOffset(months=i)
+            # Ensure values are integers (not floats)
+            inc = int(round(income_pred.iloc[i-1]))
+            exp = int(round(expenses_pred.iloc[i-1]))
+            sav = int(inc - exp)
 
-        insights = []
-        avg_savings_rate = total_savings / total_income if total_income > 0 else 0
-        insights.append({
-            "type": "info",
-            "message": f"Average predicted savings rate over 12 months: {avg_savings_rate:.1%}"
-        })
-        
-        avg_monthly_expenses = total_expenses / 12
-        avg_monthly_income = total_income / 12
-        
-        if avg_monthly_expenses > df['expenses_total'].mean() * 1.2:
-            insights.append({
-                "type": "warning",
-                "message": "Average monthly expenses are projected above the recent average"
+            predictions.append({
+                "month": dt.strftime("%Y-%m"),
+                "income": inc,
+                "expenses": exp,
+                "savings": sav
             })
-        if avg_monthly_income < df['income_total'].mean() * 0.8:
-            insights.append({
-                "type": "warning",
-                "message": "Average monthly income is projected below the recent average"
-            })
+
+            total_income += inc
+            total_expenses += exp
+
+        total_savings = int(total_income - total_expenses)
+        total_income = int(total_income)
+        total_expenses = int(total_expenses)
+
+        historical_income_avg = income_series.mean()
+        historical_expenses_avg = expenses_series.mean()
+        historical_savings_avg = (income_series - expenses_series).mean()
+
+        future_income_avg = np.mean(income_pred)
+        future_expenses_avg = np.mean(expenses_pred)
+        future_savings_avg = future_income_avg - future_expenses_avg
+
+        def trend_text(name, past, future):
+            change = ((future - past) / past) * 100 if past != 0 else 0
+
+            if change > 5:
+                return f"{name} is expected to increase compared to usual (+{change:.1f}%)."
+            elif change < -5:
+                return f"{name} is expected to decrease compared to usual ({change:.1f}%)."
+            else:
+                return f"{name} is expected to stay roughly the same as usual."
+
+        trend_insights = [
+            {"type": "trend", "message": trend_text("Income", historical_income_avg, future_income_avg)},
+            {"type": "trend", "message": trend_text("Expenses", historical_expenses_avg, future_expenses_avg)},
+            {"type": "trend", "message": trend_text("Savings", historical_savings_avg, future_savings_avg)}
+        ]
+
+        all_insights = [
+            {"type": "info", "message": "Optimized SARIMA model applied successfully 🔥"},
+            {"type": "info", "message": "Best model selected using lowest AIC."}
+        ] + trend_insights
+
+        confidence = round(
+            (
+                self.calculate_confidence(self.model_income, income_series, income_pred) +
+                self.calculate_confidence(self.model_expenses, expenses_series, expenses_pred)
+            ) / 2,
+            2
+        )
 
         return {
-            "monthly_predictions": monthly_predictions,
+            "monthly_predictions": predictions,
             "summary": {
                 "total_income": total_income,
                 "total_expenses": total_expenses,
@@ -127,31 +233,35 @@ class FinancialPredictor:
                 "avg_monthly_savings": int(total_savings / 12),
                 "confidence": confidence
             },
-            "insights": insights
+            "insights": all_insights
         }
 
-    def predict_next_year(self, csv_path):
-        df = self.preprocess(csv_path)
+    def predict_next_year(self, csv_input):
+        """
+        Predict next year using SARIMA model. csv_input can be file path, CSV string, or DataFrame.
+        """
+        df = self.preprocess(csv_input)
 
-        # Calculate yearly predictions by predicting next 12 months
-        X = df[['time_idx']]
-        self.model_income.fit(X, df['income_total'])
-        self.model_expenses.fit(X, df['expenses_total'])
+        income_series = df["income_total"]
+        expenses_series = df["expenses_total"]
 
-        # Predict next 12 months and sum them up
-        yearly_income = 0
-        yearly_expenses = 0
-        
-        for i in range(1, 13):  # Next 12 months
-            next_idx = np.array([[df['time_idx'].iloc[-1] + i]])
-            monthly_income = self.model_income.predict(next_idx)[0]
-            monthly_expenses = self.model_expenses.predict(next_idx)[0]
-            
-            yearly_income += monthly_income
-            yearly_expenses += monthly_expenses
+        self.model_income = self.optimized_sarima(income_series)
+        self.model_expenses = self.optimized_sarima(expenses_series)
 
+        income_pred = self.model_income.forecast(12)
+        expenses_pred = self.model_expenses.forecast(12)
+
+        yearly_income = int(np.sum(income_pred))
+        yearly_expenses = int(np.sum(expenses_pred))
         yearly_savings = yearly_income - yearly_expenses
-        confidence = self.calculate_confidence(df, "expenses_total")
+
+        confidence = round(
+            (
+                self.calculate_confidence(self.model_income, income_series, income_pred) +
+                self.calculate_confidence(self.model_expenses, expenses_series, expenses_pred)
+            ) / 2,
+            2
+        )
 
         insights = []
         savings_rate = yearly_savings / yearly_income if yearly_income > 0 else 0
@@ -160,7 +270,6 @@ class FinancialPredictor:
             "message": f"Predicted annual savings rate: {savings_rate:.1%}"
         })
         
-        # Compare with historical averages
         avg_monthly_income = df['income_total'].mean()
         avg_monthly_expenses = df['expenses_total'].mean()
         
@@ -177,9 +286,9 @@ class FinancialPredictor:
 
         return {
             "predictions": {
-                "income": int(yearly_income),
-                "expenses": int(yearly_expenses),
-                "savings": int(yearly_savings),
+                "income": yearly_income,
+                "expenses": yearly_expenses,
+                "savings": yearly_savings,
                 "confidence": confidence
             },
             "insights": insights
