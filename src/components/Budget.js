@@ -13,7 +13,7 @@ const Budget = ({ budgets, transactions, onUpdateBudget }) => {
   const [editingBudget, setEditingBudget] = useState(null);
   const [editAmount, setEditAmount] = useState("");
 
-  // Year selection derived from transactions
+  
   const availableYears = Array.from(
     new Set((transactions || []).map((t) => new Date(t.date).getFullYear()))
   ).sort((a, b) => a - b);
