@@ -103,7 +103,7 @@ function AppContent() {
 
   const updateBudget = (category, newBudget) => {
     const updatedBudgets = budgets.map((b) =>
-      b.category === category ? { ...b, budget: newBudget } : b
+      b.category === category ? { ...b, budget: newBudget } : b,
     );
     setBudgets(updatedBudgets);
   };

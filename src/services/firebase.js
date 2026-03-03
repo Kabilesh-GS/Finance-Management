@@ -6,7 +6,7 @@ import { getStorage } from "firebase/storage";
 const Firebase_key = process.env.REACT_APP_FIREBASE_API_KEY;
 
 const firebaseConfig = {
-  apiKey: Firebase_key,
+  apiKey: "AIzaSyCVraaFtPcXpdI4nRRPoRmGZqbWqJOb3gc",
   authDomain: "finance-management-b5703.firebaseapp.com",
   projectId: "finance-management-b5703",
   storageBucket: "finance-management-b5703.firebasestorage.app",

@@ -48,3 +48,13 @@ async def predict_year_from_csv(request: Request):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing CSV data: {str(e)}")
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "message": "Financial Prediction Server is running"}
+
+if __name__ == "__main__":
+    import uvicorn
+    print("Starting Financial Prediction Server on http://localhost:5000")
+    uvicorn.run(app, host="0.0.0.0", port=5000)

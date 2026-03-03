@@ -96,7 +96,7 @@ const Predictions = ({ transactions = [] }) => {
         if (!csvData || !csvData.trim()) {
           throw new Error(
             "No CSV data available. Please upload a CSV file in the Transactions page first."
-          );
+          ); 
         }
 
         // Send CSV via POST to Python backend
